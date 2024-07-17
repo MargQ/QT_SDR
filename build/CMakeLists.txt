@@ -12,8 +12,8 @@ set(SOURCES
 )
 
 # Путь до необходимых библиотек
-include_directories(/home/ub/libiio)
-link_directories(/home/ub/libiio)
+include_directories(${PATH}/libiio)
+link_directories(${PATH}/libiio)
 
 # Добавляем исполняемый файл
 add_executable(qt ${SOURCES})
