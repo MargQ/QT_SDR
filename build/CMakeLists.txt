@@ -1,10 +1,8 @@
+# Минимальная версия Qt, которая поддерживает Qt Charts
 cmake_minimum_required(VERSION 3.5)
 project(qt)
 
 find_package(Qt5 COMPONENTS Widgets Charts REQUIRED)
-
-# Минимальная версия Qt, которая поддерживает Qt Charts
-#find_package(Qt5 COMPONENTS Widgets Charts REQUIRED)
 
 # Исходные файлы проекта
 set(SOURCES
@@ -12,8 +10,8 @@ set(SOURCES
 )
 
 # Путь до необходимых библиотек
-include_directories(/home/ub/libiio)
-link_directories(/home/ub/libiio)
+include_directories(${PATH}/libiio)
+link_directories(${PATH}/libiio)
 
 # Добавляем исполняемый файл
 add_executable(qt ${SOURCES})

@@ -11,6 +11,11 @@
 #include <vector>
 #include <unistd.h>
 #include <complex>
+#include <QToolBar>
+#include <QDockWidget>
+#include <QMenuBar>
+#include <QStatusBar>
+#include <QAction>
 
 using namespace QtCharts;
 
@@ -167,14 +172,50 @@ int main(int argc, char *argv[]) {
     // Установка параметра сглаживания
     chartView->setRenderHint(QPainter::Antialiasing);
     // Установка размера окна
-    chartView->setMinimumSize(800, 600);
+    chartView->setMinimumSize(700, 500);
 
     // Создание главного окна
     QMainWindow mainWindow;
     // Отображение графика в центре главного окна приложения
     mainWindow.setCentralWidget(chartView);
     // Размер главного окна
-    mainWindow.resize(800, 600);
+    mainWindow.resize(700, 500);
+
+    // Добавление строки состояния
+    //QStatusBar *statusbar = mainwindow.statusbar();
+    mainWindow.statusBar()->showMessage("Ready");
+
+    // Создание меню
+    QMenuBar *menuBar = mainWindow.menuBar();
+    QMenu *fileMenu = menuBar->addMenu("&File");
+    QMenu *viewMenu = menuBar->addMenu("&View");
+
+
+    QAction *exitAction = new QAction("&Exit", &mainWindow);
+    //fileMenu->addAction(exitAction);
+
+    QAction *toggleDockAction = new QAction("&Toggle Dock", &mainWindow);
+    toggleDockAction->setCheckable(true);
+    toggleDockAction->setChecked(true);
+    //viewMenu->addAction(toggleDockAction);
+
+    // Создание тулбара
+    QToolBar *toolBar = new QToolBar("Main Toolbar", &mainWindow);
+    toolBar->addAction(exitAction);
+    toolBar->addAction(toggleDockAction);
+    mainWindow.addToolBar(toolBar);
+
+    // Создание док виджета
+    QDockWidget *dockWidget_l = new QDockWidget("Control Panel", &mainWindow);
+    QDockWidget *dockWidget_r = new QDockWidget("Control Panel", &mainWindow);
+    //dockWidget->setAllowedAreas(Qt::LeftDockWidgetArea);
+    mainWindow.addDockWidget(Qt::LeftDockWidgetArea, dockWidget_l);
+    mainWindow.addDockWidget(Qt::RightDockWidgetArea, dockWidget_r);
+
+
+    // Подключение действий
+    QObject::connect(exitAction, &QAction::triggered, &app, &QApplication::quit);
+
     // Отображение главного окна
     mainWindow.show();
     
