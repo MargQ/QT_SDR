@@ -20,8 +20,15 @@ sudo apt install libqt5charts5-dev
 ## Сборка проекта
 
 ```
-cd QT_SDR
+cd QT_SDR/build
 ```
+```
+chmod 777 install_dependencies.sh 
+```
+```
+cd ..
+```
+
 ```
 cmake build/
 ```
@@ -31,3 +38,12 @@ make
 ```
 ./qt
 ```
+## Опции
+
+Чтобы отключить установку зависимостей можно запустить CMake с параметром -DINSTALL_DEPENDENCIES=OFF
+
+```
+cmake -DINSTALL_DEPENDENCIES=OFF build/
+```
+
+По умолчанию он включен
