@@ -28,11 +28,13 @@ set(SOURCE_FILES
     main.cpp
     mainwindow.cpp
     sdr.cpp
+    sdrworker.cpp
 )
 
 set(HEADER_FILES
     mainwindow.h
     sdr.h
+    sdrworker.h
 )
 
 # Путь до необходимых библиотек

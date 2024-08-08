@@ -10,7 +10,9 @@
 #include <QMenuBar>
 #include <QStatusBar>
 #include <QAction>
+#include <QThread>
 #include "sdr.h"
+#include "sdrworker.h"
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -21,18 +23,21 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-private slots:
-    void updateData();
+public slots:
+    void updateData(const std::vector<std::complex<int16_t>>& data);
 
 private:
     QChart *chart;
     QLineSeries *realSeries;
     QLineSeries *imagSeries;
-    QTimer *timer;
+
     struct iio_context *ctx;
     struct iio_device *rx;
     struct iio_channel *rx0_i;
     struct iio_channel *rx0_q;
+
+    QThread workerThread;
 };
 
 #endif // MAINWINDOW_H
+

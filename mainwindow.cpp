@@ -1,8 +1,14 @@
 #include "mainwindow.h"
 #include <iostream>
 #include <QtCharts/QValueAxis>
+#include "sdrworker.h"
+#include <QThread>
+#include <QMetaType>
+#include <QDebug>
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart()), realSeries(new QLineSeries()), imagSeries(new QLineSeries()), timer(new QTimer(this)) {
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart()), realSeries(new QLineSeries()), imagSeries(new QLineSeries()) {
+    qDebug() << "MainWindow constructor called from thread:" << QThread::currentThread();
+
     // Инициализация SDR
     ctx = iio_create_context_from_uri("ip:192.168.3.1");
     if (!ctx) {
@@ -80,20 +86,26 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
     // Подключение действий
     connect(exitAction, &QAction::triggered, this, &QMainWindow::close);
 
-    // Настройка таймера
-    connect(timer, &QTimer::timeout, this, &MainWindow::updateData);
-    timer->start(10);
+    // Создание и запуск sdr worker
+    SdrWorker *worker = new SdrWorker(ctx, rx, rx0_i, rx0_q);
+    worker->moveToThread(&workerThread);
+
+    connect(&workerThread, &QThread::finished, worker, &QObject::deleteLater);
+    connect(this, &MainWindow::destroyed, &workerThread, &QThread::quit);
+    connect(this, &MainWindow::destroyed, worker, &QObject::deleteLater);
+    connect(worker, &SdrWorker::dataReady, this, &MainWindow::updateData);
+
+    workerThread.start();
 }
 
 MainWindow::~MainWindow() {
     iio_context_destroy(ctx);
+    workerThread.quit();
+    workerThread.wait();
 }
 
-void MainWindow::updateData() {
-    auto data = getSdrData(ctx, rx, rx0_i, rx0_q);
-    if (data.empty()) {
-        return;
-    }
+void MainWindow::updateData(const std::vector<std::complex<int16_t>>& data) {
+    qDebug() << "MainWindow::updateData called from thread:" << QThread::currentThread(); // Дебаг
 
     realSeries->clear();
     imagSeries->clear();
@@ -103,3 +115,5 @@ void MainWindow::updateData() {
         imagSeries->append(i, data[i].imag());
     }
 }
+
+
