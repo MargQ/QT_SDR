@@ -36,6 +36,8 @@ private:
     struct iio_channel *rx0_i;
     struct iio_channel *rx0_q;
 
+    QVector<QPointF> m_realBuffer;
+    QVector<QPointF> m_imagBuffer;
     QThread workerThread;
 };
 

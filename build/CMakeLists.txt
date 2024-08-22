@@ -60,9 +60,3 @@ add_executable(qt ${SOURCE_FILES})
 
 # Линковка с библиотеками (Qt, iio)
 target_link_libraries(qt Qt5::Core Qt5::Widgets Qt5::Charts iio)
-
-# Добавляем исполняемый файл
-add_executable(qt ${SOURCE_FILES})
-
-# Линковка с библиотеками (Qt, iio)
-target_link_libraries(qt Qt5::Core Qt5::Widgets Qt5::Charts iio)
