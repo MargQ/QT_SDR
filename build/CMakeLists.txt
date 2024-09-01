@@ -33,6 +33,7 @@ else()
 endif()
 
 find_package(Qt5 COMPONENTS Widgets Charts REQUIRED)
+find_package(Gnuradio REQUIRED)
 
 # Исходные файлы проекта
 set(SOURCE_FILES
@@ -52,6 +53,9 @@ set(HEADER_FILES
 include_directories(${PATH}/libiio)
 link_directories(${PATH}/libiio)
 
+include_directories(${PATH}/gnuradio)
+link_directories(${PATH}/gnuradio)
+
 # При необходимости CMake будет запускать moc
 set(CMAKE_AUTOMOC ON)
 
@@ -59,4 +63,8 @@ set(CMAKE_AUTOMOC ON)
 add_executable(qt ${SOURCE_FILES})
 
 # Линковка с библиотеками (Qt, iio)
-target_link_libraries(qt Qt5::Core Qt5::Widgets Qt5::Charts iio)
+target_link_libraries(qt Qt5::Core Qt5::Widgets Qt5::Charts iio gnuradio::gnuradio-runtime)
+
+#include_directories(${Gnuradio_INCLUDE_DIRS})
+#link_directories(${Gnuradio_LIBRARY_DIRS})
+
