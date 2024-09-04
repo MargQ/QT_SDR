@@ -1,36 +1,47 @@
-# Минимальная версия Qt, которая поддерживает Qt Charts
+ # Минимальная версия Qt, которая поддерживает Qt Charts
 cmake_minimum_required(VERSION 3.5)
 project(qt)
 
 # Опция для включения или отключения установки зависимостей
 option(INSTALL_DEPS "Установить зависимости" ON)
 
-# Проверка наличия библиотеки libcurl
-find_library(CURL_LIBRARY NAMES curl)
-find_path(CURL_INCLUDE_DIR NAMES curl/curl.h)
+# Список библиотек для установки
+set(DEPENDENCIES "libiio-dev" "libncurses5-dev" "libboost-program-options-dev" "libgpm-dev" "qtbase5-dev" "libqt5charts5-dev")
 
-if(CURL_LIBRARY AND CURL_INCLUDE_DIR)
-    message(STATUS "libcurl уже установлен")
-elseif(INSTALL_DEPS)
-    message(STATUS "libcurl не найден, начинается установка...")
+# Проверка наличия библиотек
+foreach(DEP ${DEPENDENCIES})
+    find_package(${DEP} QUIET)
+    if(NOT ${DEP}_FOUND AND INSTALL_DEPS)
+        message(STATUS "${DEP} не найден, начинается установка...")
 
-    # Обновление репозиториев
-    execute_process(COMMAND sudo -S -E apt-get -y update)
+        # Обновление репозиториев
+        execute_process(COMMAND sudo -S -E apt-get -y update)
 
-    # Установка libcurl
-    execute_process(
-        COMMAND sudo -S -E apt-get -y install libcurl4-nss-dev
-        RESULT_VARIABLE INSTALL_RESULT
-    )
+        # Установка библиотеки
+        execute_process(
+            COMMAND sudo -S -E apt-get -y install ${DEP}
+            RESULT_VARIABLE INSTALL_RESULT
+        )
 
-    if(INSTALL_RESULT EQUAL 0)
-        message(STATUS "libcurl успешно установлен")
+        if(INSTALL_RESULT EQUAL 0)
+            message(STATUS "${DEP} успешно установлен")
+        else()
+            message(FATAL_ERROR "Не удалось установить ${DEP}")
+        endif()
+    elseif(NOT ${DEP}_FOUND)
+        message(FATAL_ERROR "${DEP} не найден и установка зависимостей отключена")
     else()
-        message(FATAL_ERROR "Не удалось установить libcurl")
+        message(STATUS "${DEP} уже установлен")
     endif()
-else()
-    message(FATAL_ERROR "libcurl не найден и установка зависимостей отключена")
-endif()
+endforeach()
+
+include(FetchContent)
+FetchContent_Declare(
+  Gnuradio
+  GIT_REPOSITORY https://github.com/gnuradio/gnuradio.git
+  GIT_TAG        v3.10.11.0
+)
+FetchContent_MakeAvailable(Gnuradio)
 
 find_package(Qt5 COMPONENTS Widgets Charts REQUIRED)
 find_package(Gnuradio REQUIRED)
