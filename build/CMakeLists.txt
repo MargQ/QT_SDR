@@ -6,7 +6,7 @@ project(qt)
 option(INSTALL_DEPS "Установить зависимости" ON)
 
 # Список библиотек для установки
-set(DEPENDENCIES "libiio-dev" "libncurses5-dev" "libboost-program-options-dev" "libgpm-dev" "qtbase5-dev" "libqt5charts5-dev")
+set(DEPENDENCIES "libboost-all-dev" "libiio-dev" "libncurses5-dev" "libboost-program-options-dev" "libgpm-dev" "qtbase5-dev" "libqt5charts5-dev" "libspdlog-dev")
 
 # Проверка наличия библиотек
 foreach(DEP ${DEPENDENCIES})
@@ -44,7 +44,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Gnuradio)
 
 find_package(Qt5 COMPONENTS Widgets Charts REQUIRED)
-find_package(Gnuradio REQUIRED)
+find_package(Gnuradio QUIET)
+
+if(NOT Gnuradio_FOUND)
+    message(STATUS "Gnuradio не найден")
+else()
+    message(STATUS "Gnuradio уже установлен")
+endif()
 
 # Исходные файлы проекта
 set(SOURCE_FILES
