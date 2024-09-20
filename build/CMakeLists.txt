@@ -35,6 +35,14 @@ foreach(DEP ${DEPENDENCIES})
     endif()
 endforeach()
 
+include(FetchContent)
+FetchContent_Declare(
+  Gnuradio
+  GIT_REPOSITORY https://github.com/gnuradio/gnuradio.git
+  GIT_TAG        v3.10.11.0
+)
+FetchContent_MakeAvailable(Gnuradio)
+
 find_package(Qt5 COMPONENTS Widgets Charts REQUIRED)
 find_package(Gnuradio QUIET)
 
