@@ -2,17 +2,18 @@
 #define SDRWORKER_H
 
 #include <QObject>
-#include <vector>
-#include <complex>
 #include <QDebug>
 #include <QTimer>
-#include "iio.h"
+#include <vector>
+#include <complex>
+#include <iio/iio.h>
+#include "mainwindow.h"
 
 class SdrWorker : public QObject {
     Q_OBJECT
 
 public:
-    SdrWorker(struct iio_context* ctx, struct iio_device* rx, struct iio_channel* rx0_i, struct iio_channel* rx0_q, QObject* parent = nullptr);
+    SdrWorker(struct iio_context* ctx, struct iio_device* rx_dev, struct iio_channel* rx0_i, struct iio_channel* rx0_q, struct iio_channels_mask *rxmask, struct iio_stream  *rxstream, struct iio_device* tx_dev, struct iio_channel* tx0_i, struct iio_channel* tx0_q, struct iio_channels_mask *txmask, struct iio_stream  *txstream, QObject* parent = nullptr);
     ~SdrWorker();
 
 public slots:
@@ -23,9 +24,16 @@ signals:
 
 private:
     struct iio_context* ctx;
-    struct iio_device* rx;
+    struct iio_device* rx_dev;
+    struct iio_device* tx_dev;
     struct iio_channel* rx0_i;
+    struct iio_channel* tx0_i;
     struct iio_channel* rx0_q;
+    struct iio_channel* tx0_q;
+    struct iio_channels_mask* rxmask = NULL;
+    struct iio_channels_mask* txmask = NULL;
+    struct iio_stream  *rxstream = NULL;
+    struct iio_stream  *txstream = NULL;
     QTimer timer;
 };
 
