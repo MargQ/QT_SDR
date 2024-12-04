@@ -10,22 +10,30 @@
 
 ## Сборка проекта
 
+Клонируем репозиторий:
+
 ```
-cd QT_SDR/build
+git clone https://github.com/MargQ/QT_SDR
 ```
+
+Переходим в папку с проектом и собираем его:
+
 ```
-chmod 777 install_dependencies.sh 
-```
-```
-cd ..
+mkdir build
 ```
 
 ```
-cmake build/
+cd build
+```
+
+```
+cmake ..
 ```
 ```
 make
 ```
+
+Запускаем:
 ```
 ./qt
 ```
