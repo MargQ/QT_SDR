@@ -1,0 +1,1 @@
+/usr/bin/cc -O3 -DNDEBUG -rdynamic CMakeFiles/soapy_pluto_sdr_timestamp.dir/soapy_pluto_sdr_timestamp.c.o -o soapy_pluto_sdr_timestamp  -Wl,-rpath,/usr/local/lib /usr/local/lib/libSoapySDR.so.0.8.1 -pthread 

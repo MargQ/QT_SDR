@@ -1,0 +1,3 @@
+/home/ub/projects/sdrLessons/tests/soapy_pluto/build/CMakeFiles/soapy_pluto_sdr_timestamp.dir
+/home/ub/projects/sdrLessons/tests/soapy_pluto/build/CMakeFiles/edit_cache.dir
+/home/ub/projects/sdrLessons/tests/soapy_pluto/build/CMakeFiles/rebuild_cache.dir
