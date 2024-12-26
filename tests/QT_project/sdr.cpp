@@ -32,12 +32,10 @@ std::vector<std::complex<int16_t>> getSdrData(struct iio_context *ctx,
     iio_channel_enable(rx0_q, rxmask);
 
     // RX stream config
-    rxcfg.bw_hz = MHZ(1);   // 2 MHz rf bandwidth
-    rxcfg.fs_hz = MHZ(2.5);   // 2.5 MS/s rx sample rate
-    rxcfg.lo_hz = GHZ(2.5); // 2.5 GHz rf frequency
+    rxcfg.bw_hz = MHZ(2);   // 2 MHz rf bandwidth
+    rxcfg.fs_hz = MHZ(2.1);   // 2.5 MS/s rx sample rate
+    rxcfg.lo_hz = GHZ(1.9); // 2.5 GHz rf frequency
     rxcfg.rfport = "A_BALANCED"; // port A (select for rf freq.)
-    //rxcfg. = 40; // Устанавливаем усиление в 40 дБ, настройте по необходимости
-
     
     //printf("* Настройка параметров %s канала AD9361 \n", "RX");
     struct iio_channel *rx_chn = NULL;
@@ -49,9 +47,9 @@ std::vector<std::complex<int16_t>> getSdrData(struct iio_context *ctx,
     const struct iio_attr *rx_fs_attr = iio_channel_find_attr(rx_chn, "sampling_frequency");
     iio_attr_write_longlong(rx_fs_attr, rxcfg.fs_hz);
     const struct iio_attr *rx_gain_attr = iio_channel_find_attr(rx_chn, "gain_control_mode");
-    //iio_attr_write_string(rx_gain_attr, "slow_attack");
     // Настройка усиления
-    iio_attr_write_longlong(rx_gain_attr, 50);
+    iio_attr_write_string(rx_gain_attr, "manual"); // Автоматическое усилиение - slow attack,ручное - manual
+    iio_attr_write_longlong(rx_gain_attr, 20);
     
     //printf("* Настройка частоты опорного генератора (lo, local oscilator)  %s \n", "RX");
     struct iio_channel *rx_lo_chn = NULL;
@@ -63,12 +61,12 @@ std::vector<std::complex<int16_t>> getSdrData(struct iio_context *ctx,
     struct iio_buffer *rxbuf = iio_device_create_buffer(rx_dev, 0, rxmask);
     if (!rxbuf) {
         std::cerr << "Unable to create buffer" << std::endl;
-        return {};
+        exit(1);
     }
 
     std::vector<std::complex<int16_t>> data;
-    data.reserve(1024);
-    rxstream = iio_buffer_create_stream(rxbuf, 4, pow(2, 10));   
+    //data.reserve(pow(2, 11));
+    rxstream = iio_buffer_create_stream(rxbuf, 4, pow(2, 11));   
     size_t rx_sample_sz;
     rx_sample_sz = iio_device_get_sample_size(rx_dev, rxmask);
     //printf("* rx_sample_sz = %d\n",rx_sample_sz);
@@ -81,41 +79,31 @@ std::vector<std::complex<int16_t>> getSdrData(struct iio_context *ctx,
     void *p_end = iio_block_end(rxblock);
     auto p_dat_i = (int16_t *)iio_block_first(rxblock, rx0_i);
     auto p_dat_q = (int16_t *)iio_block_first(rxblock, rx0_q);
-    rxblock = iio_stream_get_next_block(rxstream);
 
     // Открываем файл для записи данных в текстовом формате
-    std::ofstream outfile("sdr_data.txt");
-
-    // if (!outfile.is_open()) {
-    //     std::cerr << "Error: Unable to open file for writing." << std::endl;
-    //     iio_buffer_destroy(rxbuf);
-    //     return {};
-    // }
+    std::ofstream outfile("rx_data_qt.txt");
 
     p_inc = rx_sample_sz;
-    size_t current_size = data.size();
-    size_t new_elements = ((int16_t*)p_end - p_dat_i);
-    //size_t new_elements = (p_end - p_dat_i) / sizeof(int16_t);
-    data.resize(current_size + new_elements / 2); // Делим на 2, так как каждый комплексный элемент состоит из двух int16_t
 
-    std::complex<int16_t>* data_ptr = data.data() + current_size;
-    int32_t counter = 0;
+    for (p_dat = (int16_t*)iio_block_first(rxblock, rx0_i); p_dat < p_end;p_dat += p_inc / sizeof(*p_dat)) 
 
-    while (p_dat_i < p_end && p_dat_q < p_end) 
+    //while (p_dat_i < p_end && p_dat_q < p_end) 
     {
         // Копируем I и Q компоненты в вектор данных
-        data_ptr->real(*p_dat_i);
-        data_ptr->imag(*p_dat_q);
+        rxblock = iio_stream_get_next_block(rxstream);
+
+        int16_t real_part = *p_dat_i;
+        int16_t imag_part = *p_dat_q;
 
         // Записываем I и Q компоненты в текстовом формате
-        outfile << *p_dat_i << ", " << *p_dat_q << "\n";
+        outfile << real_part << ", " << imag_part << "\n";
 
+        data.push_back(std::complex<int16_t>(real_part, imag_part));
         // Увеличиваем указатели на следующий отсчет
-        p_dat_i = (int16_t *)((char *)p_dat_i + p_inc);
-        p_dat_q = (int16_t *)((char *)p_dat_q + p_inc);
-        data_ptr++;  // Переходим к следующему комплексному числу в векторе data
-    }
+        p_dat_i += rx_sample_sz / sizeof(p_dat_i); // Переход к следующему элементу I
+        p_dat_q += rx_sample_sz / sizeof(p_dat_q);
 
+    }
 
     // Закрываем файл
     outfile.close();
@@ -149,9 +137,9 @@ void sendSdrData(struct iio_context *ctx, struct iio_device *tx_dev, struct iio_
     }
 
     // TX stream config
-	txcfg.bw_hz = MHZ(1); // 1.5 MHz rf bandwidth
-	txcfg.fs_hz = MHZ(2.5);   // 2.5 MS/s tx sample rate
-	txcfg.lo_hz = GHZ(2.5); // 2.5 GHz rf frequency
+	txcfg.bw_hz = MHZ(2); // 1.5 MHz rf bandwidth
+	txcfg.fs_hz = MHZ(2.1);   // 2.5 MS/s tx sample rate
+	txcfg.lo_hz = GHZ(1.9); // 2.5 GHz rf frequency
 	txcfg.rfport = "A"; // port A (select for rf freq.)
 
     //printf("* Настройка параметров %s канала AD9361 \n", "TX");
@@ -170,7 +158,9 @@ void sendSdrData(struct iio_context *ctx, struct iio_device *tx_dev, struct iio_
     const struct iio_attr *tx_lo_attr = iio_channel_find_attr(tx_lo_chn, "frequency");
     iio_attr_write_longlong(tx_lo_attr, txcfg.lo_hz);
     const struct iio_attr *tx_gain_attr = iio_channel_find_attr(tx_chn, "hardwaregain");
-    iio_attr_write_longlong(tx_gain_attr, 10);
+    // Настройка усиления
+    iio_attr_write_string(tx_gain_attr, "manual");
+    iio_attr_write_longlong(tx_gain_attr,-30);
 
 
     //printf("* Creating non-cyclic IIO buffers with 1 MiS\n");
@@ -203,7 +193,7 @@ void sendSdrData(struct iio_context *ctx, struct iio_device *tx_dev, struct iio_
     txblock = iio_stream_get_next_block(txstream);
 
     // Открываем файл для записи данных
-    std::ofstream outfile("sent_qam_signal.txt", std::ios::out);
+    std::ofstream outfile("tx_data_QT.txt", std::ios::out);
 
     if (!outfile.is_open()) {
         std::cerr << "Unable to open file for writing" << std::endl;
@@ -216,8 +206,6 @@ void sendSdrData(struct iio_context *ctx, struct iio_device *tx_dev, struct iio_
         *p_dat_i = tx_data[i].real();
         *p_dat_q = tx_data[i].imag();
         outfile << tx_data[i].real() << ", " << tx_data[i].imag() << std::endl;
-        p_dat_i++;
-        p_dat_q++;
         i++;
         //printf("%d, %d\n", i, q);
 
