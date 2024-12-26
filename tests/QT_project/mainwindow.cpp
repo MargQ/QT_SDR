@@ -6,7 +6,7 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart()), realSeries(new QLineSeries()), imagSeries(new QLineSeries()), spectrumSeries(new QLineSeries()), constellationSeries(new QScatterSeries()) {
 
     // Инициализация SDR
-    ctx = iio_create_context(NULL,"ip:192.168.5.1");
+    ctx = iio_create_context(NULL,"ip:192.168.2.1");
     if (!ctx) {
         std::cerr << "Unable to create context" << std::endl;
         exit(1);
