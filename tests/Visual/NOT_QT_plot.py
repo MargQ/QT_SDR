@@ -2,48 +2,48 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.fftpack import fft, ifft,  fftshift, ifftshift
 
+# # Открываем файл для чтения
+# with open('/home/ub/Desktop/NOT_QT/build/sent_qam_signal.txt', 'r') as file:
+#     # Читаем все строки из файла
+#     lines = file.readlines()
+
+# # Инициализируем список для хранения данных
+# data = []
+
+# # Обрабатываем каждую строку
+# for line in lines:
+#     line = line.strip()  # Убираем лишние пробелы
+#     if line:  # Пропускаем пустые строки
+#         try:
+#             # Разделяем строку по запятой и преобразуем в числа
+#             numbers = list(map(float, [value.strip() for value in line.split(',')]))
+#             # Создаём комплексное число (I + jQ)
+#             complex_number = complex(numbers[0], numbers[1])
+#             data.append(complex_number)
+#         except ValueError:
+#             print(f"Ошибка преобразования строки: {line}")
+
+# # Преобразуем список в массив NumPy
+# rx_nothreads = np.array(data)
+
+# # Вывод загруженных данных
+# #print(rx_nothreads)
+# plt.figure(1)
+# plt.scatter(rx_nothreads.real, rx_nothreads.imag)  # Используем scatter для диаграммы созвездия
+# plt.xlabel('I (Real)')
+# plt.ylabel('Q (Imaginary)')
+# plt.title('Передаваемое созвездие 4-QAM')
+# plt.grid(True)
+
+# plt.figure(2)
+# plt.plot(rx_nothreads)
+# plt.title('Передаваемый прямоугольный сигнал')
+
+# plt.show()
+
+
 # Открываем файл для чтения
-with open('/home/ub/Desktop/NOT_QT/build/sent_qam_signal.txt', 'r') as file:
-    # Читаем все строки из файла
-    lines = file.readlines()
-
-# Инициализируем список для хранения данных
-data = []
-
-# Обрабатываем каждую строку
-for line in lines:
-    line = line.strip()  # Убираем лишние пробелы
-    if line:  # Пропускаем пустые строки
-        try:
-            # Разделяем строку по запятой и преобразуем в числа
-            numbers = list(map(float, [value.strip() for value in line.split(',')]))
-            # Создаём комплексное число (I + jQ)
-            complex_number = complex(numbers[0], numbers[1])
-            data.append(complex_number)
-        except ValueError:
-            print(f"Ошибка преобразования строки: {line}")
-
-# Преобразуем список в массив NumPy
-rx_nothreads = np.array(data)
-
-# Вывод загруженных данных
-#print(rx_nothreads)
-plt.figure(1)
-plt.scatter(rx_nothreads.real, rx_nothreads.imag)  # Используем scatter для диаграммы созвездия
-plt.xlabel('I (Real)')
-plt.ylabel('Q (Imaginary)')
-plt.title('Передаваемое созвездие 4-QAM')
-plt.grid(True)
-
-plt.figure(2)
-plt.plot(rx_nothreads)
-plt.title('Передаваемый прямоугольный сигнал')
-
-plt.show()
-
-
-# Открываем файл для чтения
-with open('/home/ub/Desktop/NOT_QT/build/sdr_data.txt', 'r') as file: # из папки билд
+with open('/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/build/received_data.txt', 'r') as file: # из папки билд
 #with open('/home/ub/Desktop/sdr_data2.txt', 'r') as file: #из рабочего стола лучшие rx
 #with open('/home/ub/sdrLessons/build/rx_signal.txt', 'r') as file:
     # Читаем все строки из файла
