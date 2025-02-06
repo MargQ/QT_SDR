@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_SdrWorker_t {
-    QByteArrayData data[6];
-    char stringdata0[70];
+    QByteArrayData data[8];
+    char stringdata0[61];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -35,14 +35,15 @@ static const qt_meta_stringdata_SdrWorker_t qt_meta_stringdata_SdrWorker = {
 QT_MOC_LITERAL(0, 0, 9), // "SdrWorker"
 QT_MOC_LITERAL(1, 10, 9), // "dataReady"
 QT_MOC_LITERAL(2, 20, 0), // ""
-QT_MOC_LITERAL(3, 21, 35), // "std::vector<std::complex<int1..."
-QT_MOC_LITERAL(4, 57, 4), // "data"
-QT_MOC_LITERAL(5, 62, 7) // "process"
+QT_MOC_LITERAL(3, 21, 14), // "const int16_t*"
+QT_MOC_LITERAL(4, 36, 4), // "data"
+QT_MOC_LITERAL(5, 41, 6), // "size_t"
+QT_MOC_LITERAL(6, 48, 4), // "size"
+QT_MOC_LITERAL(7, 53, 7) // "process"
 
     },
-    "SdrWorker\0dataReady\0\0"
-    "std::vector<std::complex<int16_t> >\0"
-    "data\0process"
+    "SdrWorker\0dataReady\0\0const int16_t*\0"
+    "data\0size_t\0size\0process"
 };
 #undef QT_MOC_LITERAL
 
@@ -60,13 +61,13 @@ static const uint qt_meta_data_SdrWorker[] = {
        1,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,   24,    2, 0x06 /* Public */,
+       1,    2,   24,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-       5,    0,   27,    2, 0x0a /* Public */,
+       7,    0,   29,    2, 0x0a /* Public */,
 
  // signals: parameters
-    QMetaType::Void, 0x80000000 | 3,    4,
+    QMetaType::Void, 0x80000000 | 3, 0x80000000 | 5,    4,    6,
 
  // slots: parameters
     QMetaType::Void,
@@ -80,14 +81,14 @@ void SdrWorker::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, v
         auto *_t = static_cast<SdrWorker *>(_o);
         (void)_t;
         switch (_id) {
-        case 0: _t->dataReady((*reinterpret_cast< const std::vector<std::complex<int16_t> >(*)>(_a[1]))); break;
+        case 0: _t->dataReady((*reinterpret_cast< const int16_t*(*)>(_a[1])),(*reinterpret_cast< size_t(*)>(_a[2]))); break;
         case 1: _t->process(); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
         int *result = reinterpret_cast<int *>(_a[0]);
         {
-            using _t = void (SdrWorker::*)(const std::vector<std::complex<int16_t>> & );
+            using _t = void (SdrWorker::*)(const int16_t * , size_t );
             if (*reinterpret_cast<_t *>(_a[1]) == static_cast<_t>(&SdrWorker::dataReady)) {
                 *result = 0;
                 return;
@@ -137,9 +138,9 @@ int SdrWorker::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 }
 
 // SIGNAL 0
-void SdrWorker::dataReady(const std::vector<std::complex<int16_t>> & _t1)
+void SdrWorker::dataReady(const int16_t * _t1, size_t _t2)
 {
-    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))) };
+    void *_a[] = { nullptr, const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t1))), const_cast<void*>(reinterpret_cast<const void*>(std::addressof(_t2))) };
     QMetaObject::activate(this, &staticMetaObject, 0, _a);
 }
 QT_WARNING_POP

@@ -206,6 +206,7 @@ qt: CMakeFiles/qt.dir/filter.cpp.o
 qt: CMakeFiles/qt.dir/build.make
 qt: /usr/lib/x86_64-linux-gnu/libQt5Charts.so.5.15.3
 qt: /usr/lib/x86_64-linux-gnu/libfftw3.so
+qt: /usr/local/lib/libSoapySDR.so.0.8.1
 qt: /usr/lib/x86_64-linux-gnu/libQt5Widgets.so.5.15.3
 qt: /usr/lib/x86_64-linux-gnu/libQt5Gui.so.5.15.3
 qt: /usr/lib/x86_64-linux-gnu/libQt5Core.so.5.15.3

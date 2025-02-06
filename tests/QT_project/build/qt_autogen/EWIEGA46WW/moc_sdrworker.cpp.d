@@ -182,7 +182,6 @@
   /usr/include/features-time64.h \
   /usr/include/features.h \
   /usr/include/fftw3.h \
-  /usr/include/iio/iio.h \
   /usr/include/limits.h \
   /usr/include/linux/errno.h \
   /usr/include/linux/limits.h \
@@ -466,6 +465,13 @@
   /usr/include/x86_64-linux-gnu/sys/select.h \
   /usr/include/x86_64-linux-gnu/sys/syscall.h \
   /usr/include/x86_64-linux-gnu/sys/types.h \
+  /usr/lib/gcc/x86_64-linux-gnu/11/include/iso646.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/include/stdarg.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/include/stdbool.h \
-  /usr/lib/gcc/x86_64-linux-gnu/11/include/stddef.h
+  /usr/lib/gcc/x86_64-linux-gnu/11/include/stddef.h \
+  /usr/local/include/SoapySDR/Config.h \
+  /usr/local/include/SoapySDR/Constants.h \
+  /usr/local/include/SoapySDR/Device.h \
+  /usr/local/include/SoapySDR/Errors.h \
+  /usr/local/include/SoapySDR/Formats.h \
+  /usr/local/include/SoapySDR/Types.h

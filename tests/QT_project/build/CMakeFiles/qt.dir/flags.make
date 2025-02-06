@@ -6,5 +6,5 @@ CXX_DEFINES = -DQT_CHARTS_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NO_DEBUG -DQT_WIDG
 
 CXX_INCLUDES = -I/home/ub/Desktop/QT_SDR/tests/QT_project/build/qt_autogen/include -I/libiio -isystem /usr/include/x86_64-linux-gnu/qt5 -isystem /usr/include/x86_64-linux-gnu/qt5/QtCore -isystem /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -isystem /usr/include/x86_64-linux-gnu/qt5/QtWidgets -isystem /usr/include/x86_64-linux-gnu/qt5/QtGui -isystem /usr/include/x86_64-linux-gnu/qt5/QtCharts
 
-CXX_FLAGS = -fPIC
+CXX_FLAGS =  -g -O3 -DNDEBUG -fPIC -Wall -Wextra -Wnon-virtual-dtor
 
