@@ -21,19 +21,34 @@ QAM_Mod::QAM_Mod(int M) : M(M)
 
 std::vector<std::complex<float>> QAM_Mod::mod(const std::vector<int>& bits) 
 {
+    for (int bit : bits) {
+    if (bit != 0 && bit != 1) {
+        std::cerr << "Error: bits must contain only 0 or 1!" << std::endl;
+        exit(1);
+    }
+}
+
     int symbolBits = std::log2(M); // количество битов для одного QAM символа
-    std::vector<std::complex<float>> symbols(bits.size() / symbolBits);
-    
-    for (size_t i = 0; i < bits.size(); i += symbolBits) 
+
+    // Проверяем, что bits.size() кратно symbolBits
+    if (bits.size() % symbolBits != 0) {
+        std::cerr << "Error: bits.size() must be divisible by symbolBits!" << std::endl;
+        exit(1);
+    }
+
+    size_t numSymbols = bits.size() / symbolBits;
+    std::vector<std::complex<float>> symbols(numSymbols);
+
+    for (size_t i = 0; i + symbolBits <= bits.size(); i += symbolBits) 
     {
         int symbolIndex = 0;
         for (int j = 0; j < symbolBits; ++j) 
         {
             symbolIndex = (symbolIndex << 1) | (bits[i + j] ? 1 : 0);
         }
-        symbols[i / symbolBits] = QAMSymbols[symbolIndex];
+        symbols.at(i / symbolBits) = QAMSymbols.at(symbolIndex);
     }
-    
+
     return symbols;
 }
 

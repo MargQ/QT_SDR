@@ -1,215 +1,138 @@
 #include "sdr.h"
 #include <fstream>  // Для работы с файлами
 
-/* helper macros */
-#define MHZ(x) ((long long)(x*1000000.0 + .5))
-#define GHZ(x) ((long long)(x*1000000000.0 + .5))
 
-struct stream_cfg {
-	long long bw_hz; // Analog banwidth in Hz
-	long long fs_hz; // Baseband sample rate in Hz
-	long long lo_hz; // Local oscillator frequency in Hz
-	const char* rfport; // Port name
-};
-
-std::vector<std::complex<int16_t>> getSdrData(struct iio_context *ctx, 
-                                              struct iio_device *rx_dev, 
-                                              struct iio_channel *rx0_i, 
-                                              struct iio_channel *rx0_q, 
-                                              struct iio_channels_mask *rxmask, 
-                                              struct iio_stream  *rxstream)
-{
-    // Конфиг. параметры "потоков"
-    struct stream_cfg rxcfg;
-
-    //printf("* Инициализация AD9361 устройств\n");
-    struct iio_device *phy_dev;
-    phy_dev  =  iio_context_find_device(ctx, "ad9361-phy");
-    rx_dev =    iio_context_find_device(ctx, "cf-ad9361-lpc");
-
-    //printf("* Enabling IIO streaming channels\n");
-    iio_channel_enable(rx0_i, rxmask);
-    iio_channel_enable(rx0_q, rxmask);
-
-    // RX stream config
-    rxcfg.bw_hz = MHZ(2);   // 2 MHz rf bandwidth
-    rxcfg.fs_hz = MHZ(2.1);   // 2.5 MS/s rx sample rate
-    rxcfg.lo_hz = GHZ(1.9); // 2.5 GHz rf frequency
-    rxcfg.rfport = "A_BALANCED"; // port A (select for rf freq.)
+// Функция для инициализации и настройки TX
+SoapySDRStream* setup_tx(SoapySDRDevice *sdr, double sampleRate, double frequency, double txGain) {
     
-    //printf("* Настройка параметров %s канала AD9361 \n", "RX");
-    struct iio_channel *rx_chn = NULL;
-    rx_chn = iio_device_find_channel(phy_dev, "voltage0", false);
-    const struct iio_attr *rx_rf_port_attr = iio_channel_find_attr(rx_chn, "rf_port_select");
-    iio_attr_write_string(rx_rf_port_attr, rxcfg.rfport);
-    const struct iio_attr *rx_bw_attr = iio_channel_find_attr(rx_chn, "rf_bandwidth");
-    iio_attr_write_longlong(rx_bw_attr, rxcfg.bw_hz);
-    const struct iio_attr *rx_fs_attr = iio_channel_find_attr(rx_chn, "sampling_frequency");
-    iio_attr_write_longlong(rx_fs_attr, rxcfg.fs_hz);
-    const struct iio_attr *rx_gain_attr = iio_channel_find_attr(rx_chn, "gain_control_mode");
-    // Настройка усиления
-    iio_attr_write_string(rx_gain_attr, "manual"); // Автоматическое усилиение - slow attack,ручное - manual
-    iio_attr_write_longlong(rx_gain_attr, 20);
     
-    //printf("* Настройка частоты опорного генератора (lo, local oscilator)  %s \n", "RX");
-    struct iio_channel *rx_lo_chn = NULL;
-    rx_lo_chn = iio_device_find_channel(phy_dev, "altvoltage0", true);
-    const struct iio_attr *rx_lo_attr = iio_channel_find_attr(rx_lo_chn, "frequency");
-    iio_attr_write_longlong(rx_lo_attr, rxcfg.lo_hz);
 
-    //printf("* Creating non-cyclic IIO buffers with 1 MiS\n");
-    struct iio_buffer *rxbuf = iio_device_create_buffer(rx_dev, 0, rxmask);
-    if (!rxbuf) {
-        std::cerr << "Unable to create buffer" << std::endl;
-        exit(1);
+    // Настройка TX
+    if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_TX, 0, sampleRate) != 0) {
+        printf("setSampleRate tx fail: %s\n", SoapySDRDevice_lastError());
+    }
+    if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_TX, 0, frequency, NULL) != 0) {
+        printf("setFrequency tx fail: %s\n", SoapySDRDevice_lastError());
+    }
+    if (SoapySDRDevice_setGain(sdr, SOAPY_SDR_TX, 0, txGain) != 0) {
+        printf("setGain tx fail: %s\n", SoapySDRDevice_lastError());
     }
 
-    std::vector<std::complex<int16_t>> data;
-    //data.reserve(pow(2, 11));
-    rxstream = iio_buffer_create_stream(rxbuf, 4, pow(2, 11));   
-    size_t rx_sample_sz;
-    rx_sample_sz = iio_device_get_sample_size(rx_dev, rxmask);
-    //printf("* rx_sample_sz = %d\n",rx_sample_sz);
-
-    const struct iio_block *rxblock;
-    rxblock = iio_stream_get_next_block(rxstream);
-    int16_t *p_dat;
-    ptrdiff_t p_inc;
-
-    void *p_end = iio_block_end(rxblock);
-    auto p_dat_i = (int16_t *)iio_block_first(rxblock, rx0_i);
-    auto p_dat_q = (int16_t *)iio_block_first(rxblock, rx0_q);
-
-    // Открываем файл для записи данных в текстовом формате
-    std::ofstream outfile("rx_data_qt.txt");
-
-    p_inc = rx_sample_sz;
-
-    for (p_dat = (int16_t*)iio_block_first(rxblock, rx0_i); p_dat < p_end;p_dat += p_inc / sizeof(*p_dat)) 
-
-    //while (p_dat_i < p_end && p_dat_q < p_end) 
-    {
-        // Копируем I и Q компоненты в вектор данных
-        rxblock = iio_stream_get_next_block(rxstream);
-
-        int16_t real_part = *p_dat_i;
-        int16_t imag_part = *p_dat_q;
-
-        // Записываем I и Q компоненты в текстовом формате
-        outfile << real_part << ", " << imag_part << "\n";
-
-        data.push_back(std::complex<int16_t>(real_part, imag_part));
-        // Увеличиваем указатели на следующий отсчет
-        p_dat_i += rx_sample_sz / sizeof(p_dat_i); // Переход к следующему элементу I
-        p_dat_q += rx_sample_sz / sizeof(p_dat_q);
-
+    // Настройка канала TX
+    size_t channels[] = {0};
+    size_t channel_count = sizeof(channels) / sizeof(channels[0]);
+    SoapySDRStream *txStream = SoapySDRDevice_setupStream(sdr, SOAPY_SDR_TX, SOAPY_SDR_CS16, channels, channel_count, NULL);
+    if (txStream == NULL) {
+        printf("setupStream tx fail: %s\n", SoapySDRDevice_lastError());
+        return NULL;
     }
 
-    // Закрываем файл
-    outfile.close();
+    // Получение MTU
+    size_t tx_mtu = SoapySDRDevice_getStreamMTU(sdr, txStream);
+    printf("MTU - TX: %lu\n", tx_mtu);
 
-    iio_buffer_destroy(rxbuf);
-    return data;
+    return txStream;
+}
+
+// Функция для инициализации и настройки RX
+SoapySDRStream* setup_rx(SoapySDRDevice *sdr, double sampleRate, double frequency, double rxGain) {
+    
+    
+    // Настройка RX
+    if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_RX, 0, sampleRate) != 0) {
+        printf("setSampleRate rx fail: %s\n", SoapySDRDevice_lastError());
+    }
+    if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_RX, 0, frequency, NULL) != 0) {
+        printf("setFrequency rx fail: %s\n", SoapySDRDevice_lastError());
+    }
+    if (SoapySDRDevice_setGain(sdr, SOAPY_SDR_RX, 0, rxGain) != 0) {
+        printf("setGain rx fail: %s\n", SoapySDRDevice_lastError());
+    }
+
+    // Настройка канала RX
+    size_t channels[] = {0};
+    size_t channel_count = sizeof(channels) / sizeof(channels[0]);
+    SoapySDRStream *rxStream = SoapySDRDevice_setupStream(sdr, SOAPY_SDR_RX, SOAPY_SDR_CS16, channels, channel_count, NULL);
+    if (rxStream == NULL) {
+        printf("setupStream rx fail: %s\n", SoapySDRDevice_lastError());
+        return NULL;
+    }
+
+    // Получение MTU
+    size_t rx_mtu = SoapySDRDevice_getStreamMTU(sdr, rxStream);
+    printf("MTU - RX: %lu\n", rx_mtu);
+
+    return rxStream;
+}
+
+// Функция для передачи данных
+void tx_function(SoapySDRDevice *sdr, SoapySDRStream *txStream, const std::vector<std::complex<int16_t>> &tx_data, size_t tx_mtu) {
+    int16_t tx_buff[2 * tx_mtu];
+    size_t tx_data_pos = 0;
+    size_t tx_buffer_size = tx_mtu;
+
+    for (size_t i = 0; i < tx_data.size() && i < tx_mtu; ++i) {
+        tx_buff[2 * i] = tx_data[i].real();
+        tx_buff[2 * i + 1] = tx_data[i].imag();
+    }
+
+    for (size_t buffers_read = 0; buffers_read < 50; ++buffers_read) {
+        // Заполнение буфера на передачу циклически
+        for (size_t i = 0; i < tx_buffer_size; ++i) {
+            size_t data_index = (tx_data_pos + i) % tx_data.size();
+            tx_buff[2 * i] = tx_data[data_index].real();
+            tx_buff[2 * i + 1] = tx_data[data_index].imag();
+        }
+        tx_data_pos = (tx_data_pos + tx_buffer_size) % tx_data.size();
+
+        // Передача данных
+        void *tx_buffs[] = {tx_buff};
+        int flags = SOAPY_SDR_HAS_TIME;
+        long long tx_time = 0; // Передача без задержки
+        int st = SoapySDRDevice_writeStream(sdr, txStream, (const void * const*)tx_buffs, tx_buffer_size, &flags, tx_time, 0);
+        if ((size_t)st != tx_buffer_size) {
+            printf("TX Failed: %i\n", st);
+        }
+    }
+}
+
+// Функция для приема данных
+std::vector<std::complex<int16_t>> rx_function(SoapySDRDevice *sdr, SoapySDRStream *rxStream, size_t rx_mtu) {
+    std::vector<std::complex<int16_t>> rx_data;  // Вектор для хранения принятых данных
+    int16_t *buffer = (int16_t *)malloc(2 * rx_mtu * sizeof(int16_t));
+    if (buffer == NULL) {
+        printf("Memory allocation failed\n");
+        return rx_data;  // Возвращаем пустой вектор в случае ошибки
+    }
+
+    const long timeoutUs = 400000;
+    long long last_time = 0;
+
+    for (size_t buffers_read = 0; buffers_read < 50; ++buffers_read) {
+        void *rx_buffs[] = {buffer};
+        int flags;
+        long long timeNs;
+
+        // Чтение данных из RX
+        int sr = SoapySDRDevice_readStream(sdr, rxStream, rx_buffs, rx_mtu, &flags, &timeNs, timeoutUs);
+        if (sr < 0) {
+            continue;  // Пропустить в случае ошибки
+        }
+
+        // Преобразование данных в std::complex<int16_t> и добавление в вектор
+        for (int i = 0; i < sr; ++i) {
+            int16_t real = buffer[2 * i];
+            int16_t imag = buffer[2 * i + 1];
+            rx_data.push_back(std::complex<int16_t>(real, imag));
+        }
+
+        last_time = timeNs;
+    }
+
+    free(buffer);
+    return rx_data;  // Возвращаем вектор с принятыми данными
 }
 
 
-void sendSdrData(struct iio_context *ctx, struct iio_device *tx_dev, struct iio_channel *tx0_i, struct iio_channel *tx0_q, struct iio_channels_mask *txmask, struct iio_stream  *txstream, const std::vector<std::complex<int16_t>>& tx_data) {
-    // Конфиг. параметры "потоков"
-	struct stream_cfg txcfg;
-
-    //printf("* Инициализация AD9361 устройств\n");
-    struct iio_device *phy_dev;
-    phy_dev  =  iio_context_find_device(ctx, "ad9361-phy");
-    tx_dev = iio_context_find_device(ctx, "cf-ad9361-dds-core-lpc");
-
-    if (!tx_dev) {
-    std::cerr << "Unable to find TX device" << std::endl;
-    //return;
-    }
-
-    //printf("* Enabling IIO streaming channels\n");
-	iio_channel_enable(tx0_i, txmask);
-	iio_channel_enable(tx0_q, txmask);
-
-    if (!tx0_i || !tx0_q) {
-    std::cerr << "Unable to find TX channels" << std::endl;
-    //return;
-    }
-
-    // TX stream config
-	txcfg.bw_hz = MHZ(2); // 1.5 MHz rf bandwidth
-	txcfg.fs_hz = MHZ(2.1);   // 2.5 MS/s tx sample rate
-	txcfg.lo_hz = GHZ(1.9); // 2.5 GHz rf frequency
-	txcfg.rfport = "A"; // port A (select for rf freq.)
-
-    //printf("* Настройка параметров %s канала AD9361 \n", "TX");
-    struct iio_channel *tx_chn = NULL;
-    tx_chn = iio_device_find_channel(phy_dev, "voltage0", true);
-
-    const struct iio_attr *tx_rf_port_attr = iio_channel_find_attr(tx_chn, "rf_port_select");
-    iio_attr_write_string(tx_rf_port_attr, txcfg.rfport);
-    const struct iio_attr *tx_bw_attr = iio_channel_find_attr(tx_chn, "rf_bandwidth");
-    iio_attr_write_longlong(tx_bw_attr, txcfg.bw_hz);
-    const struct iio_attr *tx_fs_attr = iio_channel_find_attr(tx_chn, "sampling_frequency");
-    iio_attr_write_longlong(tx_fs_attr, txcfg.fs_hz);
-    //printf("* Настройка частоты опорного генератора (lo, local oscilator)  %s \n", "TX");
-    struct iio_channel *tx_lo_chn = NULL;
-    tx_lo_chn = iio_device_find_channel(phy_dev, "altvoltage1", true);
-    const struct iio_attr *tx_lo_attr = iio_channel_find_attr(tx_lo_chn, "frequency");
-    iio_attr_write_longlong(tx_lo_attr, txcfg.lo_hz);
-    const struct iio_attr *tx_gain_attr = iio_channel_find_attr(tx_chn, "hardwaregain");
-    // Настройка усиления
-    iio_attr_write_string(tx_gain_attr, "manual");
-    iio_attr_write_longlong(tx_gain_attr,-30);
 
 
-    //printf("* Creating non-cyclic IIO buffers with 1 MiS\n");
-    struct iio_buffer *txbuf = iio_device_create_buffer(tx_dev, 0, txmask);
-    if (!txbuf) {
-        std::cerr << "Unable to create buffer" << std::endl;
-        //return NULL;
-    }
-
-    // std::vector<std::complex<int16_t>> data;
-    // data.reserve(1024);
-    /*Размер буфера.
-     Был задан 1024*1024,
-     так как график выводится в реальном времени, то появилась проблема
-     в виде задержки обновления графика. 
-     Для работы в реальном времени лучше использовать маленький буфер */
-    txstream = iio_buffer_create_stream(txbuf, 4, pow(2, 10));   
-    size_t tx_sample_sz;
-    tx_sample_sz = iio_device_get_sample_size(tx_dev, txmask);
-    //printf("* tx_sample_sz = %d\n",tx_sample_sz);
-
-    const struct iio_block *txblock;
-    txblock = iio_stream_get_next_block(txstream);
-    int16_t *p_dat;
-	ptrdiff_t p_inc;
-
-    void *p_end = iio_block_end(txblock);
-    auto p_dat_i = (int16_t *)iio_block_first(txblock, tx0_i);
-    auto p_dat_q = (int16_t *)iio_block_first(txblock, tx0_q);
-    txblock = iio_stream_get_next_block(txstream);
-
-    // Открываем файл для записи данных
-    std::ofstream outfile("tx_data_QT.txt", std::ios::out);
-
-    if (!outfile.is_open()) {
-        std::cerr << "Unable to open file for writing" << std::endl;
-        //return;
-    }
-
-    // Заполнение буфера данными
-    size_t i = 0;
-    while (p_dat_i && p_dat_q && i < tx_data.size()) {
-        *p_dat_i = tx_data[i].real();
-        *p_dat_q = tx_data[i].imag();
-        outfile << tx_data[i].real() << ", " << tx_data[i].imag() << std::endl;
-        i++;
-        //printf("%d, %d\n", i, q);
-
-    }
-
-    iio_buffer_destroy(txbuf);
-}

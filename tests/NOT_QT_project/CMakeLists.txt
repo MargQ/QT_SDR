@@ -26,11 +26,13 @@ set(SOURCE_FILES
     main.cpp
     qam.cpp
     filter.cpp
+    TED.cpp
 )
 
 set(HEADER_FILES
     qam.h
     filter.h
+    TED.h
 )
 
 # Путь до необходимых библиотек
@@ -42,6 +44,8 @@ link_directories(/usr/lib)
 # При необходимости CMake будет запускать moc
 set(CMAKE_AUTOMOC ON)
 
+# Устанавливаем флаги компиляции для отладки при помощи Valgrind
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 # Добавляем исполняемый файл
 add_executable(main ${SOURCE_FILES})

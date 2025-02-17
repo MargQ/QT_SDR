@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/TED.cpp" "CMakeFiles/main.dir/TED.cpp.o" "gcc" "CMakeFiles/main.dir/TED.cpp.o.d"
   "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/filter.cpp" "CMakeFiles/main.dir/filter.cpp.o" "gcc" "CMakeFiles/main.dir/filter.cpp.o.d"
   "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/main.cpp" "CMakeFiles/main.dir/main.cpp.o" "gcc" "CMakeFiles/main.dir/main.cpp.o.d"
   "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/build/main_autogen/mocs_compilation.cpp" "CMakeFiles/main.dir/main_autogen/mocs_compilation.cpp.o" "gcc" "CMakeFiles/main.dir/main_autogen/mocs_compilation.cpp.o.d"

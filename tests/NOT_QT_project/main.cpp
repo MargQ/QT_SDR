@@ -6,6 +6,7 @@
 #include <complex.h>
 #include "filter.h"
 #include "qam.h"
+#include "TED.h"
 
 int main()
 {
@@ -80,7 +81,8 @@ int main()
 
     // Формирование данных для передачи
     std::vector<std::complex<int16_t>> tx_data;
-    std::vector<int> barker7 = {1, -1, 1, 1, 1, -1, 1};
+    //std::vector<int> barker7 = {1, -1, 1, 1, 1, -1, 1};
+    std::vector<int> barker7 = {1, 0, 1, 1, 1, 0, 1};
     QAM_Mod qamModulator(4);  // Для QPSK=4, для 16-QAM =16
     std::vector<int> message = {0,1,1,0,1,0,0,0,0,1,1,0,0,1,0,1,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,0,1,1,1,1,0,1,1,1,0,0,1,0,0,1,1,0,1,1,0,0,0,1,1,0,0,1,0,0,
                                 0,1,1,0,1,0,0,0,0,1,1,0,0,1,0,1,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,0,1,1,1,1,0,1,1,1,0,0,1,0,0,1,1,0,1,1,0,0,0,1,1,0,0,1,0,0};
@@ -89,6 +91,13 @@ int main()
     std::vector<int> combinedStream;
     combinedStream.insert(combinedStream.end(), barker7.begin(), barker7.end());
     combinedStream.insert(combinedStream.end(), message.begin(), message.end());
+
+    // Добавляем padding, если размер combinedStream не кратен symbolBits
+    int symbolBits = std::log2(4);
+    if (combinedStream.size() % symbolBits != 0) {
+        size_t paddingSize = symbolBits - (combinedStream.size() % symbolBits);
+        combinedStream.insert(combinedStream.end(), paddingSize, 0);
+    }
 
     std::vector<std::complex<float>> qamSymbols = qamModulator.mod(combinedStream);
     tx_data.clear();
@@ -161,7 +170,10 @@ int main()
     // Размер буфера на передачу
     size_t tx_buffer_size = tx_mtu;  
     // Количество итераций
-    size_t iteration_count = 50;
+    size_t iteration_count = 8;
+
+    std::vector<std::complex<int16_t>> rx_data;
+
     // Начинается работа с получения и отправки сэмплов
     for (size_t buffers_read = 0; buffers_read < iteration_count; buffers_read++)
     {
@@ -179,6 +191,13 @@ int main()
         // Dump info
         printf("Buffer: %lu - Samples: %i, Flags: %i, Time: %lli, TimeDiff: %lli\n", buffers_read, sr, flags, timeNs, timeNs - last_time);
         fwrite(buffer, 2 * rx_mtu * sizeof(int16_t), 1, file);
+        // Преобразование данных в std::complex<int16_t> и добавление в вектор
+        for (int i = 0; i < sr; ++i) {
+            int16_t real = buffer[2 * i];
+            int16_t imag = buffer[2 * i + 1];
+            rx_data.push_back(std::complex<int16_t>(real, imag));
+        }
+
         last_time = timeNs;
 
         // Calculate transmit time 4ms in future 
@@ -197,7 +216,7 @@ int main()
         // Передача данных
         void *tx_buffs[] = {tx_buff};
         // Без цикла заполняется каждый блок буфера, но прием выходит странный
-        if (buffers_read == 1) {
+        //if (buffers_read == 1) {
             flags = SOAPY_SDR_HAS_TIME;
             int st = SoapySDRDevice_writeStream(sdr, txStream, (const void * const*)tx_buffs, tx_buffer_size, &flags, tx_time, 0);
             fwrite(tx_buff, 2 * tx_buffer_size * sizeof(int16_t), 1, file2);
@@ -205,9 +224,77 @@ int main()
             {
                 printf("TX Failed: %i\n", st);
             }
-        }
+        //}
     }
     fclose(file);
+
+    // Нормализация данных
+    // Нужно тут нормализоавать в начале, потом фильтр (свертка), 
+    //потом TED (символьная синхронизация), затем частотная (?), демодулятор, декодер
+
+    std::vector<std::complex<int16_t>> filtered_rx_data;
+    // Проводим данные через согласованный фильтр
+    for (const auto& sample : rx_data) {
+        int real_int = static_cast<int>(sample.real());
+        int imag_int = static_cast<int>(sample.imag());
+
+        std::vector<int> realVector = {real_int};
+        std::vector<int> imagVector = {imag_int};
+        // Фильтр с ИХ 1111111111
+        std::vector<int> filteredReal = FormingFilter(realVector, formingFilter);
+        std::vector<int> filteredImag = FormingFilter(imagVector, formingFilter);
+        for (size_t i = 0; i < filteredReal.size(); ++i) {
+                int16_t real_scaled = static_cast<int16_t>(filteredReal[i]);
+                int16_t imag_scaled = static_cast<int16_t>(filteredImag[i]);
+                filtered_rx_data.push_back(std::complex<int16_t>(real_scaled, imag_scaled));
+            }
+    }
+
+    // Преобразование данных из std::complex<int16_t> в std::complex<double>
+    std::vector<std::complex<double>> filtered_rx_data_double;
+    for (const auto& sample : rx_data) {
+        filtered_rx_data_double.push_back(std::complex<double>(
+            static_cast<double>(sample.real()),
+            static_cast<double>(sample.imag())
+        ));
+    }
+
+    // Вызов функции TED_loop_filter
+    std::vector<int> TED_indices = TED(filtered_rx_data_double);
+
+    // Массив rx с индексами из TED
+    std::vector<std::complex<int16_t>> TED_rx_data;
+
+    // Создаем новый вектор, используя индексы из TED_indices
+    for (int index : TED_indices) {
+        // Проверяем, что индекс находится в пределах допустимого диапазона
+        if (index >= 0 && index < static_cast<int>(filtered_rx_data.size())) {
+            TED_rx_data.push_back(filtered_rx_data[index]);
+        } else {
+            printf("Index %d is out of bounds for rx_data\n", index);
+        }
+    }
+
+    // Создаем файл для записи отфильтрованных сэмплов
+    FILE *file3 = fopen("TED.pcm", "wb");
+    if (file3 == nullptr) {
+        printf("Failed to open file for writing\n");
+        return EXIT_FAILURE;
+    }
+
+    // Записываем отфильтрованные данные
+    for (const auto& sample : filtered_rx_data) { // filtered_rx_data TED_rx_data
+        int16_t real = sample.real();
+        int16_t imag = sample.imag();
+        
+        // Записываем реальную и мнимую часть в файл
+        fwrite(&real, sizeof(int16_t), 1, file3);
+        fwrite(&imag, sizeof(int16_t), 1, file3);
+    }
+
+    // Закрываем файл
+    fclose(file3);
+
 
     // Остановка потоков
     SoapySDRDevice_deactivateStream(sdr, rxStream, 0, 0);

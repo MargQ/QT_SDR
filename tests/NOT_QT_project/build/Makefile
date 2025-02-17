@@ -142,6 +142,30 @@ main_autogen/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main_autogen.dir/build.make CMakeFiles/main_autogen.dir/build
 .PHONY : main_autogen/fast
 
+TED.o: TED.cpp.o
+.PHONY : TED.o
+
+# target to build an object file
+TED.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/TED.cpp.o
+.PHONY : TED.cpp.o
+
+TED.i: TED.cpp.i
+.PHONY : TED.i
+
+# target to preprocess a source file
+TED.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/TED.cpp.i
+.PHONY : TED.cpp.i
+
+TED.s: TED.cpp.s
+.PHONY : TED.s
+
+# target to generate assembly for a file
+TED.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/TED.cpp.s
+.PHONY : TED.cpp.s
+
 filter.o: filter.cpp.o
 .PHONY : filter.o
 
@@ -248,6 +272,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... main_autogen"
 	@echo "... main"
+	@echo "... TED.o"
+	@echo "... TED.i"
+	@echo "... TED.s"
 	@echo "... filter.o"
 	@echo "... filter.i"
 	@echo "... filter.s"

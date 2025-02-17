@@ -2,6 +2,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/main_autogen.dir/AutogenUsed.txt"
   "CMakeFiles/main_autogen.dir/ParseCache.txt"
   "main_autogen"
+  "CMakeFiles/main.dir/TED.cpp.o"
+  "CMakeFiles/main.dir/TED.cpp.o.d"
   "CMakeFiles/main.dir/filter.cpp.o"
   "CMakeFiles/main.dir/filter.cpp.o.d"
   "CMakeFiles/main.dir/main.cpp.o"

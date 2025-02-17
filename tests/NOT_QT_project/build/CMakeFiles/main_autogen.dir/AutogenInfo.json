@@ -87,6 +87,12 @@
 	"HEADERS" : 
 	[
 		[
+			"/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/TED.h",
+			"Mu",
+			"EWIEGA46WW/moc_TED.cpp",
+			null
+		],
+		[
 			"/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/filter.h",
 			"Mu",
 			"EWIEGA46WW/moc_filter.cpp",
@@ -158,6 +164,7 @@
 	"SETTINGS_FILE" : "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/build/CMakeFiles/main_autogen.dir/AutogenUsed.txt",
 	"SOURCES" : 
 	[
+		[ "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/TED.cpp", "Mu", null ],
 		[ "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/filter.cpp", "Mu", null ],
 		[ "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/main.cpp", "Mu", null ],
 		[ "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/qam.cpp", "Mu", null ]

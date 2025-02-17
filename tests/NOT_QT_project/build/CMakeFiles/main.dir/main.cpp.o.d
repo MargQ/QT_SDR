@@ -213,4 +213,5 @@ CMakeFiles/main.dir/main.cpp.o: \
  /usr/include/c++/11/bits/vector.tcc \
  /usr/include/c++/11/pstl/execution_defs.h \
  /home/ub/Desktop/QT_SDR/tests/NOT_QT_project/qam.h \
- /usr/include/c++/11/iostream
+ /usr/include/c++/11/iostream \
+ /home/ub/Desktop/QT_SDR/tests/NOT_QT_project/TED.h

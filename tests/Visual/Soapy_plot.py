@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 
 # Открываем файл для чтения
 name = "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/build/rxdata.pcm"
-#name = "/home/ub/Desktop/QT_SDR/src/samples/data/txdata_bark.pcm"
+#name = "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/build/TED.pcm"
+#name = "/home/ub/Desktop/QT_SDR/tests/QT_project/build/rxdata.pcm"
 
 
 # Инициализируем список для хранения данных
@@ -28,24 +29,31 @@ with open(name, "rb") as f:
 # Преобразуем список в массив NumPy
 rx_sig = np.array(data)
 
+# Отрезаем первые 4080 отсчетов на приеме
+rx_sig_cut = rx_sig[400:]
 
+# # свертка
+# symbolLength = 10 
+# rxConvolve = np.convolve(rx_sig_cut, np.ones(symbolLength),'full')  # Свёртка
+# #print(len(rxConvolve))
+# rxConvolve = rx_sig_cut
 
 # Отображение исходных данных
 plt.figure(1)
-plt.plot(rx_sig.real, color='red', label="Real (I)")
-plt.plot(rx_sig.imag, color='blue', label="Imag (Q)")
+plt.plot(rx_sig_cut.real, color='red', label="Real (I)")
+plt.plot(rx_sig_cut.imag, color='blue', label="Imag (Q)")
 plt.xlabel("Sample Index")
 plt.ylabel("Normalized Amplitude")
 plt.legend()
 plt.title("Original I/Q Data")
 
 # Нормализация данных
-rx_max = np.max(np.abs(rx_sig))
-rx_sig = rx_sig / rx_max
+# rx_max = np.max(np.abs(rx_sig_cut))
+# rx_sig_cut = rx_sig_cut / rx_max
 
 # Отображение созвездия QPSK
 plt.figure(2)
-plt.scatter(rx_sig.real, rx_sig.imag, color='red')
+plt.scatter(rx_sig_cut.real, rx_sig_cut.imag, color='red')
 plt.xlabel("Real (I)")
 plt.ylabel("Imag (Q)")
 plt.title("QPSK Constellation")
@@ -53,8 +61,7 @@ plt.grid()
 
 # Открываем файл для чтения
 name = "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project/build/txdata.pcm"
-#name = "/home/ub/Desktop/QT_SDR/src/samples/data/txdata_bark.pcm"
-
+#name = "/home/ub/Desktop/QT_SDR/tests/QT_project/build/txdata.pcm"
 
 # Инициализируем список для хранения данных
 data = []

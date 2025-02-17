@@ -1517,6 +1517,23 @@ CMakeFiles/qt.dir/mainwindow.cpp.o: ../mainwindow.cpp \
   ../qam.h \
   ../oversample.h \
   ../filter.h \
+  ../ascii_art_dft.hpp \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/QString \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/qstring.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/QVector \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/qvector.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/QTextStream \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/qtextstream.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QApplication \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qapplication.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/qcoreapplication.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtCore/qeventloop.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtGui/qguiapplication.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtGui/qinputmethod.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QWidget \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qwidget.h \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLabel \
+  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlabel.h \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/QMetaType \
   /usr/include/x86_64-linux-gnu/qt5/QtCore/qmetatype.h \
   /usr/include/x86_64-linux-gnu/qt5/QtGui/QDoubleValidator \
@@ -3614,6 +3631,12 @@ qt_autogen/EWIEGA46WW/moc_mainwindow.cpp:
 
 /usr/include/x86_64-linux-gnu/qt5/QtGui/QDoubleValidator:
 
+/usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlabel.h:
+
+/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLabel:
+
+../ascii_art_dft.hpp:
+
 /usr/include/x86_64-linux-gnu/qt5/QtCore/QMetaType:
 
 /usr/include/x86_64-linux-gnu/qt5/QtGui/qguiapplication.h:
@@ -3657,6 +3680,8 @@ qt_autogen/EWIEGA46WW/moc_mainwindow.cpp:
 /usr/local/include/SoapySDR/Constants.h:
 
 /usr/local/include/SoapySDR/Device.h:
+
+/usr/include/x86_64-linux-gnu/qt5/QtCore/QTextStream:
 
 ../sdr.h:
 
@@ -3743,6 +3768,8 @@ qt_autogen/EWIEGA46WW/moc_mainwindow.cpp:
 /usr/include/x86_64-linux-gnu/qt5/QtCore/qset.h:
 
 /usr/include/x86_64-linux-gnu/qt5/QtCore/qcoreevent.h:
+
+/usr/include/x86_64-linux-gnu/qt5/QtCore/QVector:
 
 /usr/include/x86_64-linux-gnu/qt5/QtCore/QMargins:
 
@@ -4132,6 +4159,8 @@ qt_autogen/mocs_compilation.cpp:
 
 /usr/include/c++/11/bits/move.h:
 
+/usr/include/x86_64-linux-gnu/qt5/QtWidgets/QWidget:
+
 /usr/include/x86_64-linux-gnu/qt5/QtCore/qdatastream.h:
 
 /usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h:
@@ -4261,6 +4290,8 @@ qt_autogen/mocs_compilation.cpp:
 /usr/include/features-time64.h:
 
 /usr/include/x86_64-linux-gnu/sys/cdefs.h:
+
+/usr/include/x86_64-linux-gnu/qt5/QtCore/QString:
 
 /usr/include/x86_64-linux-gnu/bits/types/clock_t.h:
 
