@@ -68,7 +68,7 @@ include CMakeFiles/qt_autogen.dir/progress.make
 
 CMakeFiles/qt_autogen:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/home/ub/Desktop/QT_SDR/tests/QT_project/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Automatic MOC for target qt"
-	/usr/bin/cmake -E cmake_autogen /home/ub/Desktop/QT_SDR/tests/QT_project/build/CMakeFiles/qt_autogen.dir/AutogenInfo.json Release
+	/usr/bin/cmake -E cmake_autogen /home/ub/Desktop/QT_SDR/tests/QT_project/build/CMakeFiles/qt_autogen.dir/AutogenInfo.json Debug
 
 qt_autogen: CMakeFiles/qt_autogen
 qt_autogen: CMakeFiles/qt_autogen.dir/build.make

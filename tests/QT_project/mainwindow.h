@@ -44,6 +44,8 @@ public:
     ~MainWindow();
 
 public slots:
+
+    std::vector<float> fftshift(const std::vector<float>& data);
     void updateSpectrum(const int16_t* data, size_t size);
     void updateData(const int16_t* data, size_t size);
     void applySdrSettings(SoapySDRDevice* sdr,
@@ -51,18 +53,18 @@ public slots:
                             double gainTX,
                             double frequencyTX,
                             double sampleRateTX,
-                            //double bandwidthTX,
+                            double bandwidthTX,
                             double gainRX,
                             double frequencyRX,
                             double sampleRateRX,
                             size_t* channels,
-                            size_t channel_count
-                            //double bandwidthRX
+                            size_t channel_count,
+                            double bandwidthRX
                             );
 
 private:
 
-    void setupUI();
+
 
     QtCharts::QChartView *chartView; // Объявление chartView
 
@@ -74,6 +76,8 @@ private:
     double frequency_rx = 800e6;
     double txGain = -50.0;
     double rxGain = 10.0;
+    double bandwidth_tx = 20e6;
+    double bandwidth_rx = 20e6;
     QValueAxis *axisX_spectrum;
     QChart *chart;
     QLineSeries *realSeries;

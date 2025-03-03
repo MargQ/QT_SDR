@@ -31,19 +31,6 @@ SdrWorker::~SdrWorker() { // Деструктор
 void SdrWorker::process() {
 
 //qDebug() << "SdrWorker::process called from thread:" << QThread::currentThread();
-// Настраиваем устройства RX\TX
-
-
-// // Настройка каналов и стримов
-// size_t channels[] = {0}; // {0} or {0, 1} 
-// size_t channel_count = sizeof(channels) / sizeof(channels[0]);
-
-// if(SoapySDRDevice_setGain(sdr, SOAPY_SDR_RX, channels[0], 10.0) !=0 ){
-//     printf("setGain rx fail: %s\n", SoapySDRDevice_lastError());
-// }
-// if(SoapySDRDevice_setGain(sdr, SOAPY_SDR_TX, channels[0], -50.0) !=0 ){
-//     printf("setGain rx fail: %s\n", SoapySDRDevice_lastError());
-// }
 
 SoapySDRStream *rxStream = SoapySDRDevice_setupStream(sdr, SOAPY_SDR_RX, SOAPY_SDR_CS16, channelList.data(), channelList.size(), NULL);
 if (rxStream == NULL)
