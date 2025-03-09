@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_SdrWorker_t {
-    QByteArrayData data[8];
-    char stringdata0[61];
+    QByteArrayData data[9];
+    char stringdata0[76];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -39,11 +39,12 @@ QT_MOC_LITERAL(3, 21, 14), // "const int16_t*"
 QT_MOC_LITERAL(4, 36, 4), // "data"
 QT_MOC_LITERAL(5, 41, 6), // "size_t"
 QT_MOC_LITERAL(6, 48, 4), // "size"
-QT_MOC_LITERAL(7, 53, 7) // "process"
+QT_MOC_LITERAL(7, 53, 7), // "process"
+QT_MOC_LITERAL(8, 61, 14) // "generateTxData"
 
     },
     "SdrWorker\0dataReady\0\0const int16_t*\0"
-    "data\0size_t\0size\0process"
+    "data\0size_t\0size\0process\0generateTxData"
 };
 #undef QT_MOC_LITERAL
 
@@ -53,7 +54,7 @@ static const uint qt_meta_data_SdrWorker[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-       2,   14, // methods
+       3,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -61,15 +62,17 @@ static const uint qt_meta_data_SdrWorker[] = {
        1,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    2,   24,    2, 0x06 /* Public */,
+       1,    2,   29,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-       7,    0,   29,    2, 0x0a /* Public */,
+       7,    0,   34,    2, 0x0a /* Public */,
+       8,    0,   35,    2, 0x0a /* Public */,
 
  // signals: parameters
     QMetaType::Void, 0x80000000 | 3, 0x80000000 | 5,    4,    6,
 
  // slots: parameters
+    QMetaType::Void,
     QMetaType::Void,
 
        0        // eod
@@ -83,6 +86,7 @@ void SdrWorker::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, v
         switch (_id) {
         case 0: _t->dataReady((*reinterpret_cast< const int16_t*(*)>(_a[1])),(*reinterpret_cast< size_t(*)>(_a[2]))); break;
         case 1: _t->process(); break;
+        case 2: _t->generateTxData(); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -126,13 +130,13 @@ int SdrWorker::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 2)
+        if (_id < 3)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 2;
+        _id -= 3;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 2)
+        if (_id < 3)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 2;
+        _id -= 3;
     }
     return _id;
 }

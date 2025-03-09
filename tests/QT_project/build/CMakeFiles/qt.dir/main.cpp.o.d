@@ -437,8 +437,12 @@ CMakeFiles/qt.dir/main.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qdebug.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qtextstream.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qcontiguouscache.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/QMutex \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qmutex.h \
  /home/ub/Desktop/QT_SDR/tests/QT_project/qam.h \
  /home/ub/Desktop/QT_SDR/tests/QT_project/oversample.h \
  /home/ub/Desktop/QT_SDR/tests/QT_project/filter.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/QMetaType \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qmetatype.h
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qmetatype.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QStyleFactory \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qstylefactory.h

@@ -118,6 +118,13 @@
     "typeinfo": "cpp",
     "variant": "cpp",
     "fstream": "cpp",
-    "stdio.h": "c"
-  }
+    "stdio.h": "c",
+    "csignal": "cpp",
+    "forward_list": "cpp",
+    "unordered_set": "cpp",
+    "optional": "cpp",
+    "ranges": "cpp",
+    "typeindex": "cpp"
+  },
+  "cmake.sourceDirectory": "/home/ub/Desktop/QT_SDR/tests/NOT_QT_project"
 }

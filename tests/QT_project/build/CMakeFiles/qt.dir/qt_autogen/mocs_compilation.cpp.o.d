@@ -435,6 +435,8 @@ CMakeFiles/qt.dir/qt_autogen/mocs_compilation.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qtextstream.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qlocale.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qcontiguouscache.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/QMutex \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qmutex.h \
  /home/ub/Desktop/QT_SDR/tests/QT_project/build/qt_autogen/EWIEGA46WW/../../../qam.h \
  /home/ub/Desktop/QT_SDR/tests/QT_project/build/qt_autogen/EWIEGA46WW/../../../oversample.h \
  /home/ub/Desktop/QT_SDR/tests/QT_project/build/qt_autogen/EWIEGA46WW/../../../filter.h \

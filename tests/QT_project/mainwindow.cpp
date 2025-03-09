@@ -29,14 +29,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
         exit(1);
     }
 
-    // // Настройка TX и RX
-    // double sampleRate_tx = 1e6;
-    // double sampleRate_rx = 1e6;
-    // double frequency_tx = 800e6;
-    // double frequency_rx = 800e6;
-    // double txGain = -50.0;
-    // double rxGain = 10.0;
-
     if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_RX, 0, sampleRate_rx) != 0)
     {
         printf("setSampleRate rx fail: %s\n", SoapySDRDevice_lastError());
@@ -53,8 +45,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
     {
         printf("setFrequency tx fail: %s\n", SoapySDRDevice_lastError());
     }
-    //printf("SoapySDRDevice_getFrequency tx: %lf\n", SoapySDRDevice_getFrequency(sdr, SOAPY_SDR_TX, 0));
-
     if (SoapySDRDevice_setBandwidth(sdr, SOAPY_SDR_TX, 0, bandwidth_rx) != 0) {
         qCritical() << "Ошибка установки полосы пропускания TX:" << SoapySDRDevice_lastError();
         return;
@@ -211,13 +201,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
     chart->setAxisY(axisY_time, realSeries);
     chart->setAxisY(axisY_time, imagSeries);
 
-    QChartView *chartView = new QChartView(chart);
+    QChartView *chartView = new QChartView(chart); //////
     chartView->setRenderHint(QPainter::Antialiasing, false);
     chartView->setMinimumSize(400, 300);
     setCentralWidget(chartView);
 
     // Настройка графика для спектра
-    QChart *spectrumChart = new QChart();
+    spectrumChart = new QChart();
     spectrumSeries->setName("Spectrum");
     spectrumChart->addSeries(spectrumSeries);
     // spectrumChart->createDefaultAxes();
@@ -258,7 +248,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
     constellationSeries->setMarkerSize(5.0); // Размер точек
 
     // Настройка графика для диаграммы созвездия
-    QChart *constellationChart = new QChart();
+    constellationChart = new QChart();
     constellationChart->addSeries(constellationSeries);
     constellationChart->createDefaultAxes();
     constellationChart->setTitle("Constellation Diagram");
@@ -318,6 +308,36 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
     // QDockWidget *dockWidget_r = new QDockWidget("Control Panel", this);
     // addDockWidget(Qt::LeftDockWidgetArea, dockWidget_l);
     // addDockWidget(Qt::RightDockWidgetArea, dockWidget_r);
+
+    ///////////////////////ТЕМА//////////////
+    QMenu *themeMenu = menuBar->addMenu("&Theme");
+
+    QAction *lightThemeAction = new QAction("Light", this);
+    QAction *darkThemeAction = new QAction("Dark", this);
+    QAction *customThemeAction = new QAction("Custom", this);
+
+    lightThemeAction->setCheckable(true);
+    darkThemeAction->setCheckable(true);
+    customThemeAction->setCheckable(true);
+
+    themeMenu->addAction(lightThemeAction);
+    themeMenu->addAction(darkThemeAction);
+    themeMenu->addAction(customThemeAction);
+
+    QActionGroup *themeGroup = new QActionGroup(this);
+    themeGroup->addAction(lightThemeAction);
+    themeGroup->addAction(darkThemeAction);
+    themeGroup->addAction(customThemeAction);
+    themeGroup->setExclusive(true);
+
+    lightThemeAction->setChecked(true);
+    applyTheme("Light");
+
+    connect(lightThemeAction, &QAction::triggered, this, [this]() { applyTheme("Light"); });
+    connect(darkThemeAction, &QAction::triggered, this, [this]() { applyTheme("Dark"); });
+    connect(customThemeAction, &QAction::triggered, this, [this]() { applyTheme("Custom"); });
+
+    ///////////////////
 
     // Подключение действий
     connect(exitAction, &QAction::triggered, this, &QMainWindow::close);
@@ -384,11 +404,6 @@ void MainWindow::updateSpectrum(const int16_t* data, size_t size) {
      
      // Очистка текущих данных спектра
      spectrumSeries->clear();
- 
-    //  // Заполнение спектра новыми данными
-    //  for (size_t i = 0; i < shifted_lpdft.size(); ++i) {
-    //      spectrumSeries->append(i, shifted_lpdft[i]);
-    //  }
 
     // Заполнение спектра новыми данными
     double freq_step = sampleRate_rx / shifted_lpdft.size(); // Шаг по частоте
@@ -536,4 +551,45 @@ void MainWindow::applySdrSettings(SoapySDRDevice* sdr,
         this->frequency_rx = frequencyRX;
         this->txGain = gainTX;
         this->rxGain = gainRX;
+}
+
+void MainWindow::applyTheme(const QString &theme) {
+    if (theme == "Light") {
+        qApp->setStyleSheet("");
+        chart->setTheme(QChart::ChartThemeLight);
+        spectrumChart->setTheme(QChart::ChartThemeLight);
+        constellationChart->setTheme(QChart::ChartThemeLight);
+    } else if (theme == "Dark") {
+        qApp->setStyleSheet(
+            "QWidget { background-color: #2E3440; color: #ECEFF4; }"
+            "QMenuBar { background-color: #3B4252; color: #ECEFF4; }"
+            "QMenuBar::item:selected { background-color: #4C566A; }"
+            "QMenu { background-color: #3B4252; color: #ECEFF4; }"
+            "QMenu::item:selected { background-color: #4C566A; }"
+            "QDockWidget { background-color: #3B4252; color: #ECEFF4; }"
+            "QToolBar { background-color: #3B4252; color: #ECEFF4; }"
+            "QStatusBar { background-color: #3B4252; color: #ECEFF4; }"
+            "QLineEdit { background-color: #4C566A; color: #ECEFF4; }"
+            "QPushButton { background-color: #4C566A; color: #ECEFF4; }"
+        );
+        chart->setTheme(QChart::ChartThemeDark);
+        spectrumChart->setTheme(QChart::ChartThemeDark);
+        constellationChart->setTheme(QChart::ChartThemeDark);
+    } else if (theme == "Custom") {
+        qApp->setStyleSheet(
+            "QWidget { background-color: #F0F0F0; color: #000000; }"
+            "QMenuBar { background-color: #E0E0E0; color: #000000; }"
+            "QMenuBar::item:selected { background-color: #C0C0C0; }"
+            "QMenu { background-color: #E0E0E0; color: #000000; }"
+            "QMenu::item:selected { background-color: #C0C0C0; }"
+            "QDockWidget { background-color: #E0E0E0; color: #000000; }"
+            "QToolBar { background-color: #E0E0E0; color: #000000; }"
+            "QStatusBar { background-color: #E0E0E0; color: #000000; }"
+            "QLineEdit { background-color: #FFFFFF; color: #000000; }"
+            "QPushButton { background-color: #C0C0C0; color: #000000; }"
+        );
+        chart->setTheme(QChart::ChartThemeBlueCerulean);
+        spectrumChart->setTheme(QChart::ChartThemeBlueCerulean);
+        constellationChart->setTheme(QChart::ChartThemeBlueCerulean);
+    }
 }

@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QDebug>
 #include <QTimer>
+#include <QMutex>
 #include <vector>
 #include <complex>
 #include <SoapySDR/Device.h>
@@ -23,6 +24,7 @@ public:
 
 public slots:
     void process();
+    void generateTxData();
 
 signals:
     void dataReady(const int16_t* data, size_t size);
@@ -30,21 +32,27 @@ signals:
 private:
     SoapySDRDevice *sdr = nullptr;
     std::vector<size_t> channelList; // Список каналов
-    double sampleRate;
-    double frequency;
-    double txGain;
+    // Данные для передачи
+    std::vector<std::complex<int16_t>> tx_data;
+    std::vector<int16_t> tx_buff;  // Буфер для передачи данных
+    size_t tx_data_pos = 0;  // Текущая позиция в tx_data
+    size_t tx_buffer_size = 0;  // Размер буфера передачи
+    size_t iteration_count = 0;
+    int flags;        // flags set by receive operation
+    long long timeNs;
 
-    double sampleRate2;
-    double frequency2;
-    double rxGain;
+    SoapySDRStream *rxStream = nullptr;
+    size_t rx_mtu = 0;
 
-    // SoapySDRStream *rxStream = nullptr;
-    // size_t rx_mtu = 0;
+    SoapySDRStream *txStream = nullptr;
+    size_t tx_mtu = 0;
 
-    // SoapySDRStream *txStream = nullptr;
-    // size_t tx_mtu = 0;
-    //size_t tx_data_pos = 0;
+    std::vector<int16_t> buffer;
+
     QTimer timer;
+
+    bool initialized;
+    QMutex mutex;
 };
 
 #endif // SDRWORKER_H

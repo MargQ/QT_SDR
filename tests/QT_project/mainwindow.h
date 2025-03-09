@@ -61,6 +61,7 @@ public slots:
                             size_t channel_count,
                             double bandwidthRX
                             );
+    void applyTheme(const QString &theme);
 
 private:
 
@@ -79,7 +80,10 @@ private:
     double bandwidth_tx = 20e6;
     double bandwidth_rx = 20e6;
     QValueAxis *axisX_spectrum;
+
     QChart *chart;
+    QChart *spectrumChart;       // График спектра
+    QChart *constellationChart;  // График созвездия
     QLineSeries *realSeries;
     QLineSeries *imagSeries;
     QLineSeries *spectrumSeries;
