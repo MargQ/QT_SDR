@@ -6,7 +6,7 @@
 
 Текущий результат:
 
-<img src = "files/spectrum.gif">
+<img src = "files/project.gif">
 
 ## Сборка проекта
 
@@ -37,12 +37,3 @@ make
 ```
 ./qt
 ```
-## Опции
-
-Чтобы отключить установку зависимостей можно запустить CMake с параметром -DINSTALL_DEPENDENCIES=OFF
-
-```
-cmake -DINSTALL_DEPENDENCIES=OFF build/
-```
-
-По умолчанию он включен
