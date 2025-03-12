@@ -71,6 +71,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
     QDockWidget *dockWidget_p = new QDockWidget("SDR Configuration", this);
     QWidget *dockWidgetContent = new QWidget(dockWidget_p);
     QFormLayout *formLayout = new QFormLayout(dockWidgetContent);
+
+        // Фиксируем док-виджет слева
+    addDockWidget(Qt::LeftDockWidgetArea, dockWidget_p);
+
+    // Запрещаем открепление и перемещение
+    dockWidget_p->setFeatures(QDockWidget::DockWidgetClosable);  // Только закрытие
+
+    // Фиксируем ширину док-виджета
+    dockWidget_p->setFixedWidth(300);  // Ширина 300 пикселей
+    
     // Установка валидатора для научной нотации
     QDoubleValidator *validator = new QDoubleValidator(parent);
     validator->setNotation(QDoubleValidator::ScientificNotation);
@@ -308,6 +318,54 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
     // QDockWidget *dockWidget_r = new QDockWidget("Control Panel", this);
     // addDockWidget(Qt::LeftDockWidgetArea, dockWidget_l);
     // addDockWidget(Qt::RightDockWidgetArea, dockWidget_r);
+
+    ////ВЗАИМОДЕЙСТВИЕ С ГРАФИКАМИ//////////////
+
+
+
+    // Создаем док-виджеты для каждого графика
+    QDockWidget *chartDock = new QDockWidget("Time Chart", this);
+    QDockWidget *spectrumDock = new QDockWidget("Spectrum Chart", this);
+    QDockWidget *constellationDock = new QDockWidget("Constellation Chart", this);
+
+    // Добавляем QChartView в док-виджеты
+    chartDock->setWidget(chartView);
+    spectrumDock->setWidget(spectrumView);
+    constellationDock->setWidget(constellationView);
+
+    // Задаем начальное расположение графиков
+    addDockWidget(Qt::RightDockWidgetArea, spectrumDock);          // Временной график сверху
+    splitDockWidget(spectrumDock, chartDock, Qt::Vertical);   // Спектр под временным графиком
+    splitDockWidget(chartDock, constellationDock, Qt::Horizontal);  // Созвездие справа от спектра
+
+    // Разрешаем открепление, перемещение и сворачивание
+    chartDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    spectrumDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    constellationDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+
+    // Настройка пропорций
+    QList<QDockWidget*> leftDocks;
+    leftDocks << dockWidget_p;
+    resizeDocks(leftDocks, {100}, Qt::Horizontal);  // Ширина левой области
+
+    QList<QDockWidget*> rightDocks;
+    rightDocks << chartDock << spectrumDock << constellationDock;
+    resizeDocks(rightDocks, {700, 400, 300}, Qt::Vertical);  // Настраиваем пропорции графиков
+    
+    // Для каждого док-виджета
+    QAction* toggleFullscreen = new QAction("Развернуть", this);
+    connect(toggleFullscreen, &QAction::triggered, [chartDock]() {
+        if (chartDock->isFloating()) {
+            chartDock->showFullScreen();
+        } else {
+            chartDock->showNormal();
+        }
+    });
+
+    chartDock->addAction(toggleFullscreen);
+    // Настройка главного окна
+    setWindowTitle("SDR Application with Fixed Layout");
+    /////////////////////////////////////////
 
     ///////////////////////ТЕМА//////////////
     QMenu *themeMenu = menuBar->addMenu("&Theme");
