@@ -18,6 +18,8 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QDockWidget>
+#include <QToolButton>
+#include <QSettings>
 
 #include <iostream>
 #include <cstdint> // Для работы с memcpy
@@ -28,9 +30,6 @@
 #include "qam.h"
 #include "oversample.h"
 #include "filter.h"
-
-//extern std::vector<std::complex<int16_t>> shared_buffer; // Разделяемый буфер
-//extern std::mutex buffer_mutex; // Мьютекс для синхронизации доступа к буферу
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -45,6 +44,7 @@ public:
 
 public slots:
 
+    void closeEvent(QCloseEvent *event);
     std::vector<float> fftshift(const std::vector<float>& data);
     void updateSpectrum(const int16_t* data, size_t size);
     void updateData(const int16_t* data, size_t size);
@@ -62,15 +62,35 @@ public slots:
                             double bandwidthRX
                             );
     void applyTheme(const QString &theme);
+    // Слоты для управления функциями док-виджетов
+    void toggleSpectrumMovable(bool enabled);
+    void toggleTimeMovable(bool enabled);
+    void toggleConstellationMovable(bool enabled);
+    
+    void toggleSpectrumFloatable(bool enabled);
+    void toggleTimeFloatable(bool enabled);
+    void toggleConstellationFloatable(bool enabled);
+
+    void toggleSpectrumClosable(bool enabled);
+    void toggleTimeClosable(bool enabled);
+    void toggleConstellationClosable(bool enabled);
+
+    // Функция для установки/снятия флагов функций док-виджета
+    void setDockFeatures(QDockWidget *dock, QDockWidget::DockWidgetFeature feature, bool enabled);
+    
+    // Методы для сохранения и загрузки настроек
+    void loadSettings();
+    void saveSettings();
+
+
 
 private:
-
-
 
     QtCharts::QChartView *chartView; // Объявление chartView
 
     // Буфер для хранения данных перед вычислением спектра
     std::vector<std::complex<float>> buff;
+    // Параметры SDR
     double sampleRate_tx = 1e6;
     double sampleRate_rx = 1e6;
     double frequency_tx = 800e6;
@@ -84,10 +104,36 @@ private:
     QChart *chart;
     QChart *spectrumChart;       // График спектра
     QChart *constellationChart;  // График созвездия
+
+    // Док-виджеты для графиков
+    QDockWidget *chartDock;
+    QDockWidget *spectrumDock;
+    QDockWidget *constellationDock;
+
+    // Переменные для хранения текущей темы
+    QString currentTheme;
+    
+    QAction *lightThemeAction;
+    QAction *darkThemeAction;
+    QAction *customThemeAction;
+
     QLineSeries *realSeries;
     QLineSeries *imagSeries;
     QLineSeries *spectrumSeries;
     QScatterSeries *constellationSeries; // Объявление серии для созвездия
+
+    // Действия для управления графиками
+    QAction *SpectrumMovableAction;
+    QAction *SpectrumFloatableAction;
+    QAction *SpectrumClosableAction;
+
+    QAction *TimeMovableAction;
+    QAction *TimeFloatableAction;
+    QAction *TimeClosableAction;
+
+    QAction *ConstellationMovableAction;
+    QAction *ConstellationFloatableAction;
+    QAction *ConstellationClosableAction;
     
     SoapySDRStream *rxStream;
     SoapySDRStream *txStream;

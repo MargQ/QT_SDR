@@ -1,9 +1,13 @@
 #include "mainwindow.h"
 #include "sdrworker.h"
-#include "ascii_art_dft.hpp"
+#include "fft.hpp"
 #include <QMetaType>
 #include <QDebug>
 #include <QDoubleValidator>
+#include <QMainWindow>  // Для QMainWindow
+#include <QPointer>     // Для QPointer
+#include <QToolButton>  // Для QToolButton
+
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart()), realSeries(new QLineSeries()), imagSeries(new QLineSeries()), spectrumSeries(new QLineSeries()), constellationSeries(new QScatterSeries()) {
 
@@ -220,13 +224,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
     spectrumChart = new QChart();
     spectrumSeries->setName("Spectrum");
     spectrumChart->addSeries(spectrumSeries);
-    // spectrumChart->createDefaultAxes();
 
     // Создаем и настраиваем ось X для графика спектра
     // В конструкторе MainWindow
     axisX_spectrum = new QValueAxis();
     axisX_spectrum->setTitleText("Frequency (MHz)");
-    //axisX_spectrum->setRange(0, 1023); // num_bins — количество бинов FFT
     axisX_spectrum->setRange((frequency_rx - sampleRate_rx/2) / 1e6, (frequency_rx + sampleRate_rx/2) / 1e6);
 
     spectrumChart->addAxis(axisX_spectrum, Qt::AlignBottom);
@@ -313,20 +315,83 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
     toolBar->addAction(toggleDockAction);
     addToolBar(toolBar);
 
-    // // Создание док виджета
-    // QDockWidget *dockWidget_l = new QDockWidget("Control Panel", this);
-    // QDockWidget *dockWidget_r = new QDockWidget("Control Panel", this);
-    // addDockWidget(Qt::LeftDockWidgetArea, dockWidget_l);
-    // addDockWidget(Qt::RightDockWidgetArea, dockWidget_r);
+    // Добавление подменю для управления функциями док-виджетов
+    QMenu *ChartsMenu = menuBar->addMenu("Charts");
+
+
+
+    // Добавление действий для управления функциями
+    QMenu *movableMenu = ChartsMenu->addMenu("Movable Feature");
+    QMenu *floatableMenu = ChartsMenu->addMenu("Floatable Feature");
+    QMenu *closableMenu = ChartsMenu->addMenu("Closable Feature");
+
+    SpectrumMovableAction = new QAction("Spectrum Chart", this);
+    TimeMovableAction = new QAction("Time Chart", this);
+    ConstellationMovableAction = new QAction("Constellation Chart", this);
+
+    SpectrumFloatableAction = new QAction("Spectrum Chart", this);
+    TimeFloatableAction = new QAction("Time Chart", this);
+    ConstellationFloatableAction = new QAction("Constellation Chart", this);
+
+    SpectrumClosableAction = new QAction("Spectrum Chart", this);
+    TimeClosableAction = new QAction("Time Chart", this);
+    ConstellationClosableAction = new QAction("Constellation Chart", this);
+
+    SpectrumMovableAction->setCheckable(true);
+    SpectrumFloatableAction->setCheckable(true);
+    SpectrumMovableAction->setChecked(true);
+    SpectrumFloatableAction->setChecked(true);
+    SpectrumClosableAction->setCheckable(true);
+    SpectrumClosableAction->setChecked(true);
+
+    TimeMovableAction->setCheckable(true);
+    TimeMovableAction->setChecked(true);
+    TimeFloatableAction->setCheckable(true);
+    TimeFloatableAction->setChecked(true);
+    TimeClosableAction->setCheckable(true);
+    TimeClosableAction->setChecked(true);
+
+    ConstellationMovableAction->setCheckable(true);
+    ConstellationMovableAction->setChecked(true);
+    ConstellationFloatableAction->setCheckable(true);
+    ConstellationFloatableAction->setChecked(true);
+    ConstellationClosableAction->setCheckable(true);
+    ConstellationClosableAction->setChecked(true);
+
+    movableMenu->addAction(SpectrumMovableAction);
+    movableMenu->addAction(TimeMovableAction);
+    movableMenu->addAction(ConstellationMovableAction);
+
+    floatableMenu->addAction(SpectrumFloatableAction);
+    floatableMenu->addAction(TimeFloatableAction);
+    floatableMenu->addAction(ConstellationFloatableAction);
+
+    closableMenu->addAction(SpectrumClosableAction);
+    closableMenu->addAction(TimeClosableAction);
+    closableMenu->addAction(ConstellationClosableAction);
+
+    // Подключение действий к слотам
+    connect(SpectrumMovableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumMovable);
+    connect(TimeMovableAction, &QAction::toggled, this, &MainWindow::toggleTimeMovable);
+    connect(ConstellationMovableAction, &QAction::toggled, this, &MainWindow::toggleConstellationMovable);
+
+    connect(SpectrumClosableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumClosable);
+    connect(TimeClosableAction, &QAction::toggled, this, &MainWindow::toggleTimeClosable);
+    connect(ConstellationClosableAction, &QAction::toggled, this, &MainWindow::toggleConstellationClosable);
+
+    connect(SpectrumFloatableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumFloatable);
+    connect(TimeFloatableAction, &QAction::toggled, this, &MainWindow::toggleTimeFloatable);
+    connect(ConstellationFloatableAction, &QAction::toggled, this, &MainWindow::toggleConstellationFloatable);
+
+    // connect(floatableAction, &QAction::toggled, this, &MainWindow::toggleFloatable);
+    // connect(closableAction, &QAction::toggled, this, &MainWindow::toggleClosable);
 
     ////ВЗАИМОДЕЙСТВИЕ С ГРАФИКАМИ//////////////
 
-
-
     // Создаем док-виджеты для каждого графика
-    QDockWidget *chartDock = new QDockWidget("Time Chart", this);
-    QDockWidget *spectrumDock = new QDockWidget("Spectrum Chart", this);
-    QDockWidget *constellationDock = new QDockWidget("Constellation Chart", this);
+    chartDock = new QDockWidget("Time Chart", this);
+    spectrumDock = new QDockWidget("Spectrum Chart", this);
+    constellationDock = new QDockWidget("Constellation Chart", this);
 
     // Добавляем QChartView в док-виджеты
     chartDock->setWidget(chartView);
@@ -350,29 +415,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
 
     QList<QDockWidget*> rightDocks;
     rightDocks << chartDock << spectrumDock << constellationDock;
-    resizeDocks(rightDocks, {700, 400, 300}, Qt::Vertical);  // Настраиваем пропорции графиков
-    
-    // Для каждого док-виджета
-    QAction* toggleFullscreen = new QAction("Развернуть", this);
-    connect(toggleFullscreen, &QAction::triggered, [chartDock]() {
-        if (chartDock->isFloating()) {
-            chartDock->showFullScreen();
-        } else {
-            chartDock->showNormal();
-        }
-    });
-
-    chartDock->addAction(toggleFullscreen);
+    resizeDocks(rightDocks, {700, 400, 300}, Qt::Vertical);  // Настройка пропорции графиков
     // Настройка главного окна
-    setWindowTitle("SDR Application with Fixed Layout");
+    setWindowTitle("Spectrum analyzer");
     /////////////////////////////////////////
 
     ///////////////////////ТЕМА//////////////
     QMenu *themeMenu = menuBar->addMenu("&Theme");
 
-    QAction *lightThemeAction = new QAction("Light", this);
-    QAction *darkThemeAction = new QAction("Dark", this);
-    QAction *customThemeAction = new QAction("Custom", this);
+    lightThemeAction = new QAction("Light", this);
+    darkThemeAction = new QAction("Dark", this);
+    customThemeAction = new QAction("Custom", this);
 
     lightThemeAction->setCheckable(true);
     darkThemeAction->setCheckable(true);
@@ -388,8 +441,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
     themeGroup->addAction(customThemeAction);
     themeGroup->setExclusive(true);
 
-    lightThemeAction->setChecked(true);
-    applyTheme("Light");
+    darkThemeAction->setChecked(true);
+    currentTheme = "Dark"; // Сохраняем выбранную тему
+    applyTheme(currentTheme);
+    ///////////////////////////////
+    loadSettings();
+
+    // Создание кнопки Save Settings
+    QPushButton *saveSettingsButton = new QPushButton("Save Settings", this);
+    formLayout->addRow(saveSettingsButton);
+
+    connect(saveSettingsButton, &QPushButton::clicked, this, &MainWindow::saveSettings);
 
     connect(lightThemeAction, &QAction::triggered, this, [this]() { applyTheme("Light"); });
     connect(darkThemeAction, &QAction::triggered, this, [this]() { applyTheme("Dark"); });
@@ -417,6 +479,12 @@ MainWindow::~MainWindow() {
     workerThread.quit();
     workerThread.wait();
 }
+// Сохранение настроек при закрытии приложения
+void MainWindow::closeEvent(QCloseEvent *event) {
+    saveSettings();
+    // Подтверждение закрытие окна
+    event->accept();
+}
 
 // // Метод создает интерфейс
 // void MainWindow::setupUI() {
@@ -426,6 +494,154 @@ MainWindow::~MainWindow() {
 //     centralWidget->setLayout(layout);
 //     setCentralWidget(centralWidget);
 // }
+
+void MainWindow::saveSettings() {
+    QSettings settings("Me", "SDRApp");
+    qDebug() << "Saving settings...";
+    // Сохраняем тему
+    settings.setValue("Theme", currentTheme);
+    qDebug() << "Saved theme:" << currentTheme;
+
+    // Сохраняем параметры SDR
+    settings.setValue("SDR/IPAddress", ipAddressInput->text());
+    settings.setValue("SDR/GainTX", gainTX_Input->text());
+    settings.setValue("SDR/FrequencyTX", frequencyTX_Input->text());
+    settings.setValue("SDR/SampleRateTX", sampleRateTX_Input->text());
+    settings.setValue("SDR/BandwidthTX", bandwidthTX_Input->text());
+    settings.setValue("SDR/GainRX", gainRX_Input->text());
+    settings.setValue("SDR/FrequencyRX", frequencyRX_Input->text());
+    settings.setValue("SDR/SampleRateRX", sampleRateRX_Input->text());
+    settings.setValue("SDR/BandwidthRX", bandwidthRX_Input->text());
+
+    // Сохранение настройки графиков
+    settings.setValue("spectrumDock/movable", SpectrumMovableAction->isChecked());
+    settings.setValue("spectrumDock/floatable", SpectrumFloatableAction->isChecked());
+    settings.setValue("spectrumDock/closable", SpectrumClosableAction->isChecked());
+
+    settings.setValue("chartDock/movable", TimeMovableAction->isChecked());
+    settings.setValue("chartDock/floatable", TimeFloatableAction->isChecked());
+    settings.setValue("chartDock/closable", TimeClosableAction->isChecked());
+
+    settings.setValue("constellationDock/movable", ConstellationMovableAction->isChecked());
+    settings.setValue("constellationDock/floatable", ConstellationFloatableAction->isChecked());
+    settings.setValue("constellationDock/closable", ConstellationClosableAction->isChecked());
+
+    qDebug() << "Settings saved successfully";
+    statusBar()->showMessage("Settings saved successfully");
+
+}
+
+void MainWindow::loadSettings() {
+    QSettings settings("Me", "SDRApp");
+    qDebug() << "Loading settings...";
+
+    // Загрузка темы
+    QString theme = settings.value("Theme", currentTheme).toString();
+    applyTheme(theme);
+
+    qDebug() << "Loaded theme:" << currentTheme;
+
+    // Обновление состояний действий для темы
+    if (theme == "Light") {
+        lightThemeAction->setChecked(true);
+    } else if (theme == "Dark") {
+        darkThemeAction->setChecked(true);
+    } else if (theme == "Custom") {
+        customThemeAction->setChecked(true);
+    }
+    // Загрузка параметров SDR
+    ipAddressInput->setText(settings.value("ipAddress", "192.168.2.1").toString());
+    gainTX_Input->setText(QString::number(settings.value("gainTX", 0.0).toDouble()));
+    frequencyTX_Input->setText(QString::number(settings.value("frequencyTX", 0.0).toDouble(), 'g', 10));
+    sampleRateTX_Input->setText(QString::number(settings.value("sampleRateTX", 0.0).toDouble(), 'g', 10));
+    bandwidthTX_Input->setText(QString::number(settings.value("bandwidthTX", 0.0).toDouble(), 'g', 10));
+    gainRX_Input->setText(QString::number(settings.value("gainRX", 0.0).toDouble()));
+    frequencyRX_Input->setText(QString::number(settings.value("frequencyRX", 0.0).toDouble(), 'g', 10));
+    sampleRateRX_Input->setText(QString::number(settings.value("sampleRateRX", 0.0).toDouble(), 'g', 10));
+    bandwidthRX_Input->setText(QString::number(settings.value("bandwidthRX", 0.0).toDouble(), 'g', 10));
+
+    // Применение настроек SDR
+    applySdrSettings(sdr,
+                     ipAddressInput->text().toStdString(),
+                     gainTX_Input->text().toDouble(),
+                     frequencyTX_Input->text().toDouble(),
+                     sampleRateTX_Input->text().toDouble(),
+                     bandwidthTX_Input->text().toDouble(),
+                     gainRX_Input->text().toDouble(),
+                     frequencyRX_Input->text().toDouble(),
+                     sampleRateRX_Input->text().toDouble(),
+                     channels,
+                     channel_count,
+                     bandwidthRX_Input->text().toDouble());
+
+    // Загрузка настроек графиков
+    QDockWidget::DockWidgetFeatures spectrumFeatures = 0;
+    if (settings.value("spectrumDock/movable", true).toBool()) {
+        spectrumFeatures |= QDockWidget::DockWidgetMovable;
+        SpectrumMovableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        SpectrumMovableAction->setChecked(false);
+    }
+    if (settings.value("spectrumDock/floatable", true).toBool()) {
+        spectrumFeatures |= QDockWidget::DockWidgetFloatable;
+        SpectrumFloatableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        SpectrumFloatableAction->setChecked(false);
+    }
+    if (settings.value("spectrumDock/closable", true).toBool()) {
+        spectrumFeatures |= QDockWidget::DockWidgetClosable;
+        SpectrumClosableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        SpectrumClosableAction->setChecked(false);
+    }
+    spectrumDock->setFeatures(spectrumFeatures);
+
+    QDockWidget::DockWidgetFeatures chartFeatures = 0;
+    if (settings.value("chartDock/movable", true).toBool()) {
+        chartFeatures |= QDockWidget::DockWidgetMovable;
+        TimeMovableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        TimeMovableAction->setChecked(false);
+    }
+    if (settings.value("chartDock/floatable", true).toBool()) {
+        chartFeatures |= QDockWidget::DockWidgetFloatable;
+        TimeFloatableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        TimeFloatableAction->setChecked(false);
+    }
+    if (settings.value("chartDock/closable", true).toBool()) {
+        chartFeatures |= QDockWidget::DockWidgetClosable;
+        TimeClosableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        TimeClosableAction->setChecked(false);
+    }
+    chartDock->setFeatures(chartFeatures);
+
+    QDockWidget::DockWidgetFeatures constellationFeatures = 0;
+    if (settings.value("constellationDock/movable", true).toBool()) {
+        constellationFeatures |= QDockWidget::DockWidgetMovable;
+        ConstellationMovableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        ConstellationMovableAction->setChecked(false);
+    }
+    if (settings.value("constellationDock/floatable", true).toBool()) {
+        constellationFeatures |= QDockWidget::DockWidgetFloatable;
+        ConstellationFloatableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        ConstellationFloatableAction->setChecked(false);
+    }
+    if (settings.value("constellationDock/closable", true).toBool()) {
+        constellationFeatures |= QDockWidget::DockWidgetClosable;
+        ConstellationClosableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        ConstellationClosableAction->setChecked(false);
+    }
+    constellationDock->setFeatures(constellationFeatures);
+
+    qDebug() << "Settings loaded successfully";
+
+    statusBar()->showMessage("Settings loaded successfully");
+}
 
 std::vector<float> MainWindow::fftshift(const std::vector<float>& data) {
     size_t N = data.size();
@@ -650,4 +866,57 @@ void MainWindow::applyTheme(const QString &theme) {
         spectrumChart->setTheme(QChart::ChartThemeBlueCerulean);
         constellationChart->setTheme(QChart::ChartThemeBlueCerulean);
     }
+
+    currentTheme = theme;
 }
+
+    // Слоты для управления функциями док-виджетов
+void MainWindow::toggleSpectrumMovable(bool enabled) {
+    setDockFeatures(spectrumDock, QDockWidget::DockWidgetMovable, enabled);
+}
+
+void MainWindow::toggleTimeMovable(bool enabled) {
+    setDockFeatures(chartDock, QDockWidget::DockWidgetMovable, enabled);
+}
+
+void MainWindow::toggleConstellationMovable(bool enabled) {
+    setDockFeatures(constellationDock, QDockWidget::DockWidgetMovable, enabled);
+}
+
+
+void MainWindow::toggleSpectrumFloatable(bool enabled) {
+    setDockFeatures(spectrumDock, QDockWidget::DockWidgetFloatable, enabled);
+}
+
+void MainWindow::toggleTimeFloatable(bool enabled) {
+    setDockFeatures(chartDock, QDockWidget::DockWidgetFloatable, enabled);
+}
+
+void MainWindow::toggleConstellationFloatable(bool enabled) {
+    setDockFeatures(constellationDock, QDockWidget::DockWidgetFloatable, enabled);
+}
+
+
+void MainWindow::toggleSpectrumClosable(bool enabled) {
+    setDockFeatures(spectrumDock, QDockWidget::DockWidgetClosable, enabled);
+}
+
+void MainWindow::toggleTimeClosable(bool enabled) {
+    setDockFeatures(chartDock, QDockWidget::DockWidgetClosable, enabled);
+}
+
+void MainWindow::toggleConstellationClosable(bool enabled) {
+    setDockFeatures(constellationDock, QDockWidget::DockWidgetClosable, enabled);
+}
+
+// Функция для установки/снятия флагов функций док-виджета
+void MainWindow::setDockFeatures(QDockWidget *dock, QDockWidget::DockWidgetFeature feature, bool enabled) {
+    QDockWidget::DockWidgetFeatures features = dock->features();
+    if (enabled) {
+        features |= feature; // Включаем функцию
+    } else {
+        features &= ~feature; // Отключаем функцию
+    }
+    dock->setFeatures(features);
+}
+

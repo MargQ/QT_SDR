@@ -40,7 +40,7 @@ set(HEADER_FILES
     ${DIR}/qam.h
     ${DIR}/oversample.h
     ${DIR}/filter.h
-    ${DIR}/ascii_art_dft.hpp
+    ${DIR}/fft.hpp
 )
 
 # Путь до необходимых библиотек

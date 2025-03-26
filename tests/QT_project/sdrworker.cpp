@@ -165,7 +165,7 @@ if (buffer.data() == NULL) {
 }
 
 // При первом запуске очищаем rx_buff от возможного мусора.
-for (size_t buffers_read = 0; buffers_read < 50; /* in loop */)
+for (size_t buffers_read = 0; buffers_read < 30; /* in loop */)
 {
     void *buffs[] = {buffer.data()}; //void *buffs[] = {rx_buff[0][0], rx_buff[0][1]}; //array of buffers
     int flags; //flags set by receive operation
