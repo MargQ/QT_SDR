@@ -929,84 +929,84 @@ std::vector<std::complex<double>> MainWindow::convertToComplex(const int16_t* da
 
 void MainWindow::updateEyeDiagram(const std::vector<std::complex<double>>& signal, 
     const std::vector<int>& tedIndices) {
-const int samplesPerSymbol = 10;
-const int windowSize = 2 * samplesPerSymbol;
-const int halfWindow = windowSize / 2;
+    const int samplesPerSymbol = 10;
+    const int windowSize = 2 * samplesPerSymbol;
+    const int halfWindow = windowSize / 2;
 
-if (signal.empty() || tedIndices.empty()) {
-qWarning() << "Empty input data!";
-return;
-}
+    if (signal.empty() || tedIndices.empty()) {
+        qWarning() << "Empty input data!";
+        return;
+    }
 
-// Получаем текущий чарт (не создаем новый)
-QChart* chart = eyeDiagramView->chart();
-if (!chart) {
-chart = new QChart();
-eyeDiagramView->setChart(chart);
-}
+    // Получаем текущий чарт
+    QChart* chart = eyeDiagramView->chart();
+    if (!chart) {
+        chart = new QChart();
+        eyeDiagramView->setChart(chart);
+    }
 
-// Сохраняем текущую тему
-QChart::ChartTheme currentTheme = chart->theme();
+    // Сохранение текущей темы
+    QChart::ChartTheme currentTheme = chart->theme();
 
-// Очищаем только содержимое
-chart->removeAllSeries();
-for (auto axis : chart->axes()) {
-chart->removeAxis(axis);
-delete axis;
-}
+    // Очищаем только содержимое
+    chart->removeAllSeries();
+    for (auto axis : chart->axes()) {
+        chart->removeAxis(axis);
+        delete axis;
+    }
 
-// Настройки чарта
-chart->setMargins(QMargins(0, 0, 0, 0));
-chart->legend()->hide();
+    // Настройки чарта
+    chart->setMargins(QMargins(0, 0, 0, 0));
+    chart->legend()->hide();
 
-// Масштабирование (как в оригинале)
-double maxAmplitude = 1e-6;
-for (int idx : tedIndices) {
-if (idx >= halfWindow && idx + halfWindow < static_cast<int>(signal.size())) {
-for (int j = -halfWindow; j < halfWindow; ++j) {
-maxAmplitude = std::max(maxAmplitude, std::abs(signal[idx+j].real()));
-}
-}
-}
-const double scale = (maxAmplitude > 0) ? 0.8/maxAmplitude : 1.0;
+    // Масштабирование (как в оригинале)
+    double maxAmplitude = 1e-6;
+    for (int idx : tedIndices) {
+        if (idx >= halfWindow && idx + halfWindow < static_cast<int>(signal.size())) {
+            for (int j = -halfWindow; j < halfWindow; ++j) {
+                maxAmplitude = std::max(maxAmplitude, std::abs(signal[idx+j].real()));
+            }
+        }
+    }
+    const double scale = (maxAmplitude > 0) ? 0.8/maxAmplitude : 1.0;
 
-// Создаем новые оси
-QValueAxis *axisX = new QValueAxis();
-QValueAxis *axisY = new QValueAxis();
-chart->addAxis(axisX, Qt::AlignBottom);
-chart->addAxis(axisY, Qt::AlignLeft);
+    // Создаем новые оси
+    QValueAxis *axisX = new QValueAxis();
+    QValueAxis *axisY = new QValueAxis();
+    chart->addAxis(axisX, Qt::AlignBottom);
+    chart->addAxis(axisY, Qt::AlignLeft);
 
-// Добавляем данные (как в оригинале)
-const int maxTraces = qMin(50, static_cast<int>(tedIndices.size()));
-for (int i = 0; i < maxTraces; ++i) {
-int centerIdx = tedIndices[i];
-if (centerIdx < halfWindow || centerIdx + halfWindow >= static_cast<int>(signal.size())) 
-continue;
+    // Добавление данных
+    const int maxTraces = qMin(50, static_cast<int>(tedIndices.size()));
+    for (int i = 0; i < maxTraces; ++i) {
+        int centerIdx = tedIndices[i];
+        if (centerIdx < halfWindow || centerIdx + halfWindow >= static_cast<int>(signal.size())) 
+            continue;
 
-QLineSeries *trace = new QSplineSeries();
-for (int j = -halfWindow; j < halfWindow; ++j) {
-int idx = centerIdx + j;
-double time = static_cast<double>(j) / samplesPerSymbol;
-double value = signal[idx].real() * scale;
-trace->append(time, value);
-}
+    QLineSeries *trace = new QSplineSeries();
+    for (int j = -halfWindow; j < halfWindow; ++j) {
+        int idx = centerIdx + j;
+        double time = static_cast<double>(j) / samplesPerSymbol;
+        double value = signal[idx].real() * scale;
+        trace->append(time, value);
+    }
 
-chart->addSeries(trace);
-trace->attachAxis(axisX);
-trace->attachAxis(axisY);
-}
+    chart->addSeries(trace);
+    trace->attachAxis(axisX);
+    trace->attachAxis(axisY);
+    }
 
-// Восстанавливаем тему
-chart->setTheme(currentTheme);
+    // Восстанавливаем тему
+    chart->setTheme(currentTheme);
 
-// Настройка осей и заголовка
-axisX->setRange(-1, 1);
-axisX->setTitleText("Символы");
-axisY->setRange(-1, 1);
-axisY->setTitleText("Амплитуда (I)");
-chart->setTitle("Глазковая диаграмма");
+    // Настройка осей и заголовка
+    axisX->setRange(-1, 1);
+    axisX->setTitleText("Символы");
+    axisY->setRange(-1, 1);
+    axisY->setTitleText("Амплитуда (I)");
+    chart->setTitle("Глазковая диаграмма");
 
-eyeDiagramView->setRenderHint(QPainter::Antialiasing);
+    eyeDiagramView->setRenderHint(QPainter::Antialiasing);
 }
 
 
