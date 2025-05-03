@@ -79,14 +79,20 @@ public slots:
     void toggleSpectrumMovable(bool enabled);
     void toggleTimeMovable(bool enabled);
     void toggleConstellationMovable(bool enabled);
+    void toggleConstellationCLMovable(bool enabled);
+    void toggleEyeDiagramMovable(bool enabled);
     
     void toggleSpectrumFloatable(bool enabled);
     void toggleTimeFloatable(bool enabled);
     void toggleConstellationFloatable(bool enabled);
+    void toggleConstellationCLFloatable(bool enabled);
+    void toggleEyeDiagramFloatable(bool enabled);
 
     void toggleSpectrumClosable(bool enabled);
     void toggleTimeClosable(bool enabled);
     void toggleConstellationClosable(bool enabled);
+    void toggleConstellationCLClosable(bool enabled);
+    void toggleEyeDiagramClosable(bool enabled);
 
     // Функция для установки/снятия флагов функций док-виджета
     void setDockFeatures(QDockWidget *dock, QDockWidget::DockWidgetFeature feature, bool enabled);
@@ -123,7 +129,6 @@ private:
     QChart *constellationChart;  // График созвездия
     QChart *constellationCLChart;  // График созвездия после Costas Loop
     QChart *eyeDiagramChart;
-    QChart *tempChart; // Временнный график для eyeDiagram
 
 
     // Док-виджеты для графиков
@@ -161,6 +166,15 @@ private:
     QAction *ConstellationMovableAction;
     QAction *ConstellationFloatableAction;
     QAction *ConstellationClosableAction;
+
+    QAction *ConstellationCLMovableAction;
+    QAction *ConstellationCLFloatableAction;
+    QAction *ConstellationCLClosableAction;
+
+    QAction *EyeDiagramMovableAction;
+    QAction *EyeDiagramFloatableAction;
+    QAction *EyeDiagramClosableAction;
+
     
     SoapySDRStream *rxStream;
     SoapySDRStream *txStream;

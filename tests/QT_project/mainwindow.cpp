@@ -425,14 +425,20 @@ formLayout->insertRow(1, sdrModeGroup); // Вставляем после IP-ад
     SpectrumMovableAction = new QAction("Spectrum Chart", this);
     TimeMovableAction = new QAction("Time Chart", this);
     ConstellationMovableAction = new QAction("Constellation Chart", this);
+    ConstellationCLMovableAction = new QAction("Constellation Costas Loop Chart", this);
+    EyeDiagramMovableAction = new QAction("Eye Diagram", this);
 
     SpectrumFloatableAction = new QAction("Spectrum Chart", this);
     TimeFloatableAction = new QAction("Time Chart", this);
     ConstellationFloatableAction = new QAction("Constellation Chart", this);
+    ConstellationCLFloatableAction = new QAction("Constellation Costas Loop Chart", this);
+    EyeDiagramFloatableAction = new QAction("Eye Diagram", this);
 
     SpectrumClosableAction = new QAction("Spectrum Chart", this);
     TimeClosableAction = new QAction("Time Chart", this);
     ConstellationClosableAction = new QAction("Constellation Chart", this);
+    ConstellationCLClosableAction = new QAction("Constellation Costas Loop Chart", this);
+    EyeDiagramClosableAction = new QAction("Eye Diagram", this);
 
     SpectrumMovableAction->setCheckable(true);
     SpectrumFloatableAction->setCheckable(true);
@@ -455,30 +461,60 @@ formLayout->insertRow(1, sdrModeGroup); // Вставляем после IP-ад
     ConstellationClosableAction->setCheckable(true);
     ConstellationClosableAction->setChecked(true);
 
+    ConstellationCLMovableAction->setCheckable(true);
+    ConstellationCLMovableAction->setChecked(true);
+    ConstellationCLFloatableAction->setCheckable(true);
+    ConstellationCLFloatableAction->setChecked(true);
+    ConstellationCLClosableAction->setCheckable(true);
+    ConstellationCLClosableAction->setChecked(true);
+
+    EyeDiagramMovableAction->setCheckable(true);
+    EyeDiagramMovableAction->setChecked(true);
+    EyeDiagramFloatableAction->setCheckable(true);
+    EyeDiagramFloatableAction->setChecked(true);
+    EyeDiagramClosableAction->setCheckable(true);
+    EyeDiagramClosableAction->setChecked(true);
+
+
     movableMenu->addAction(SpectrumMovableAction);
     movableMenu->addAction(TimeMovableAction);
     movableMenu->addAction(ConstellationMovableAction);
+    movableMenu->addAction(ConstellationCLMovableAction);
+    movableMenu->addAction(EyeDiagramMovableAction);
 
     floatableMenu->addAction(SpectrumFloatableAction);
     floatableMenu->addAction(TimeFloatableAction);
     floatableMenu->addAction(ConstellationFloatableAction);
+    floatableMenu->addAction(ConstellationCLFloatableAction);
+    floatableMenu->addAction(EyeDiagramFloatableAction);
 
     closableMenu->addAction(SpectrumClosableAction);
     closableMenu->addAction(TimeClosableAction);
     closableMenu->addAction(ConstellationClosableAction);
+    closableMenu->addAction(ConstellationCLClosableAction);
+    closableMenu->addAction(EyeDiagramClosableAction);
 
     // Подключение действий к слотам
     connect(SpectrumMovableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumMovable);
     connect(TimeMovableAction, &QAction::toggled, this, &MainWindow::toggleTimeMovable);
     connect(ConstellationMovableAction, &QAction::toggled, this, &MainWindow::toggleConstellationMovable);
-
-    connect(SpectrumClosableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumClosable);
-    connect(TimeClosableAction, &QAction::toggled, this, &MainWindow::toggleTimeClosable);
-    connect(ConstellationClosableAction, &QAction::toggled, this, &MainWindow::toggleConstellationClosable);
+    connect(ConstellationCLMovableAction, &QAction::toggled, this, &MainWindow::toggleConstellationCLMovable);
+    connect(EyeDiagramMovableAction, &QAction::toggled, this, &MainWindow::toggleEyeDiagramMovable);
 
     connect(SpectrumFloatableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumFloatable);
     connect(TimeFloatableAction, &QAction::toggled, this, &MainWindow::toggleTimeFloatable);
     connect(ConstellationFloatableAction, &QAction::toggled, this, &MainWindow::toggleConstellationFloatable);
+    connect(ConstellationCLFloatableAction, &QAction::toggled, this, &MainWindow::toggleConstellationCLFloatable);
+    connect(EyeDiagramFloatableAction, &QAction::toggled, this, &MainWindow::toggleEyeDiagramFloatable);
+
+    connect(SpectrumClosableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumClosable);
+    connect(TimeClosableAction, &QAction::toggled, this, &MainWindow::toggleTimeClosable);
+    connect(ConstellationClosableAction, &QAction::toggled, this, &MainWindow::toggleConstellationClosable);
+    connect(ConstellationCLClosableAction, &QAction::toggled, this, &MainWindow::toggleConstellationCLClosable);
+    connect(EyeDiagramClosableAction, &QAction::toggled, this, &MainWindow::toggleEyeDiagramClosable);
+
+
+
 
     ////ВЗАИМОДЕЙСТВИЕ С ГРАФИКАМИ//////////////
 
@@ -632,6 +668,14 @@ void MainWindow::saveSettings() {
     settings.setValue("constellationDock/floatable", ConstellationFloatableAction->isChecked());
     settings.setValue("constellationDock/closable", ConstellationClosableAction->isChecked());
 
+    settings.setValue("constellationCLDock/movable", ConstellationCLMovableAction->isChecked());
+    settings.setValue("constellationCLDock/floatable", ConstellationCLFloatableAction->isChecked());
+    settings.setValue("constellationCLDock/closable", ConstellationCLClosableAction->isChecked());
+
+    settings.setValue("eyeDiagramDock/movable", EyeDiagramMovableAction->isChecked());
+    settings.setValue("eyeDiagramDock/floatable", EyeDiagramFloatableAction->isChecked());
+    settings.setValue("eyeDiagramDock/closable", EyeDiagramClosableAction->isChecked()); 
+
     qDebug() << "Settings saved successfully";
     statusBar()->showMessage("Settings saved successfully");
 
@@ -744,6 +788,47 @@ void MainWindow::loadSettings() {
     }
     constellationDock->setFeatures(constellationFeatures);
 
+    QDockWidget::DockWidgetFeatures constellationCLFeatures = 0;
+    if (settings.value("constellationCLDock/movable", true).toBool()) {
+        constellationCLFeatures |= QDockWidget::DockWidgetMovable;
+        ConstellationCLMovableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        ConstellationCLMovableAction->setChecked(false);
+    }
+    if (settings.value("constellationCLDock/floatable", true).toBool()) {
+        constellationCLFeatures |= QDockWidget::DockWidgetFloatable;
+        ConstellationCLFloatableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        ConstellationCLFloatableAction->setChecked(false);
+    }
+    if (settings.value("constellationCLDock/closable", true).toBool()) {
+        constellationCLFeatures |= QDockWidget::DockWidgetClosable;
+        ConstellationCLClosableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        ConstellationCLClosableAction->setChecked(false);
+    }
+    constellationCLDock->setFeatures(constellationCLFeatures);
+
+    QDockWidget::DockWidgetFeatures eyeDiagramFeatures = 0;
+    if (settings.value("eyeDiagramDock/movable", true).toBool()) {
+        eyeDiagramFeatures |= QDockWidget::DockWidgetMovable;
+        EyeDiagramMovableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        EyeDiagramMovableAction->setChecked(false);
+    }
+    if (settings.value("eyeDiagramDock/floatable", true).toBool()) {
+        eyeDiagramFeatures |= QDockWidget::DockWidgetFloatable;
+        EyeDiagramFloatableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        EyeDiagramFloatableAction->setChecked(false);
+    }
+    if (settings.value("eyeDiagramDock/closable", true).toBool()) {
+        eyeDiagramFeatures |= QDockWidget::DockWidgetClosable;
+        EyeDiagramClosableAction->setChecked(true); // Обновляем состояние действия
+    } else {
+        EyeDiagramClosableAction->setChecked(false);
+    }
+    eyeDiagramDock->setFeatures(eyeDiagramFeatures);
     qDebug() << "Settings loaded successfully";
 
     statusBar()->showMessage("Настройки успешно загружены");
@@ -803,15 +888,8 @@ void MainWindow::updateSpectrum(const int16_t* data, size_t size) {
         // // Обновление оси X
         QValueAxis *axisX = qobject_cast<QValueAxis*>(spectrumChart->axisX());
         QValueAxis *axisY = qobject_cast<QValueAxis*>(spectrumChart->axisY());
-
-        // if (axisX) {
-        //     double start_freq = (frequency_rx - sampleRate_rx / 2) / 1e6; // Начальная частота в МГц
-        //     double end_freq = (frequency_rx + sampleRate_rx / 2) / 1e6;   // Конечная частота в МГц
-        //     axisX->setRange(start_freq, end_freq);
-            axisX->setTitleText("Частота (МГц)");
-            axisY->setTitleText("Мощность (дБ)");
-
-        // }
+        axisX->setTitleText("Частота (МГц)");
+        axisY->setTitleText("Мощность (дБ)");
     }
     
 }
@@ -873,19 +951,19 @@ void MainWindow::updateData(const int16_t* data, size_t size) {
     std::vector<std::complex<double>> filtered_signal = ConvolveSame(processed, filter_srrc);
 
 
-    FILE* file = fopen("TED.pcm", "wb");
-    if (!file) {
-        perror("Ошибка открытия файла");
-    } else {
-        for (const auto& sample : processed) {
-            int16_t real = static_cast<int16_t>(std::clamp(sample.real() * 32767.0, -32768.0, 32767.0));
-            int16_t imag = static_cast<int16_t>(std::clamp(sample.imag() * 32767.0, -32768.0, 32767.0));
+    // FILE* file = fopen("TED.pcm", "wb");
+    // if (!file) {
+    //     perror("Ошибка открытия файла");
+    // } else {
+    //     for (const auto& sample : processed) {
+    //         int16_t real = static_cast<int16_t>(std::clamp(sample.real() * 32767.0, -32768.0, 32767.0));
+    //         int16_t imag = static_cast<int16_t>(std::clamp(sample.imag() * 32767.0, -32768.0, 32767.0));
 
-            fwrite(&real, sizeof(int16_t), 1, file);
-            fwrite(&imag, sizeof(int16_t), 1, file);
-        }
-    }
-    fclose(file);
+    //         fwrite(&real, sizeof(int16_t), 1, file);
+    //         fwrite(&imag, sizeof(int16_t), 1, file);
+    //     }
+    // }
+    // fclose(file);
 
     // // Генерация QPSK с 10 отсчётами на символ
     // std::vector<std::complex<double>> ideal_qpsk;
@@ -938,7 +1016,7 @@ void MainWindow::updateEyeDiagram(const std::vector<std::complex<double>>& signa
         return;
     }
 
-    // Получаем текущий чарт
+    // Получение текущего чарта
     QChart* chart = eyeDiagramView->chart();
     if (!chart) {
         chart = new QChart();
@@ -948,7 +1026,7 @@ void MainWindow::updateEyeDiagram(const std::vector<std::complex<double>>& signa
     // Сохранение текущей темы
     QChart::ChartTheme currentTheme = chart->theme();
 
-    // Очищаем только содержимое
+    // Очищение серии
     chart->removeAllSeries();
     for (auto axis : chart->axes()) {
         chart->removeAxis(axis);
@@ -959,7 +1037,7 @@ void MainWindow::updateEyeDiagram(const std::vector<std::complex<double>>& signa
     chart->setMargins(QMargins(0, 0, 0, 0));
     chart->legend()->hide();
 
-    // Масштабирование (как в оригинале)
+    // Масштабирование
     double maxAmplitude = 1e-6;
     for (int idx : tedIndices) {
         if (idx >= halfWindow && idx + halfWindow < static_cast<int>(signal.size())) {
@@ -970,7 +1048,7 @@ void MainWindow::updateEyeDiagram(const std::vector<std::complex<double>>& signa
     }
     const double scale = (maxAmplitude > 0) ? 0.8/maxAmplitude : 1.0;
 
-    // Создаем новые оси
+    // Создание новых осей
     QValueAxis *axisX = new QValueAxis();
     QValueAxis *axisY = new QValueAxis();
     chart->addAxis(axisX, Qt::AlignBottom);
@@ -996,7 +1074,7 @@ void MainWindow::updateEyeDiagram(const std::vector<std::complex<double>>& signa
     trace->attachAxis(axisY);
     }
 
-    // Восстанавливаем тему
+    // Восстановление темы
     chart->setTheme(currentTheme);
 
     // Настройка осей и заголовка
@@ -1005,7 +1083,7 @@ void MainWindow::updateEyeDiagram(const std::vector<std::complex<double>>& signa
     axisY->setRange(-1, 1);
     axisY->setTitleText("Амплитуда (I)");
     chart->setTitle("Глазковая диаграмма");
-
+    // Сглаживание
     eyeDiagramView->setRenderHint(QPainter::Antialiasing);
 }
 
@@ -1143,6 +1221,13 @@ void MainWindow::toggleConstellationMovable(bool enabled) {
     setDockFeatures(constellationDock, QDockWidget::DockWidgetMovable, enabled);
 }
 
+void MainWindow::toggleConstellationCLMovable(bool enabled) {
+    setDockFeatures(constellationCLDock, QDockWidget::DockWidgetMovable, enabled);
+}
+
+void MainWindow::toggleEyeDiagramMovable(bool enabled) {
+    setDockFeatures(eyeDiagramDock, QDockWidget::DockWidgetMovable, enabled);
+}
 
 void MainWindow::toggleSpectrumFloatable(bool enabled) {
     setDockFeatures(spectrumDock, QDockWidget::DockWidgetFloatable, enabled);
@@ -1156,6 +1241,13 @@ void MainWindow::toggleConstellationFloatable(bool enabled) {
     setDockFeatures(constellationDock, QDockWidget::DockWidgetFloatable, enabled);
 }
 
+void MainWindow::toggleConstellationCLFloatable(bool enabled) {
+    setDockFeatures(constellationCLDock, QDockWidget::DockWidgetFloatable, enabled);
+}
+
+void MainWindow::toggleEyeDiagramFloatable(bool enabled) {
+    setDockFeatures(eyeDiagramDock, QDockWidget::DockWidgetFloatable, enabled);
+}
 
 void MainWindow::toggleSpectrumClosable(bool enabled) {
     setDockFeatures(spectrumDock, QDockWidget::DockWidgetClosable, enabled);
@@ -1167,6 +1259,14 @@ void MainWindow::toggleTimeClosable(bool enabled) {
 
 void MainWindow::toggleConstellationClosable(bool enabled) {
     setDockFeatures(constellationDock, QDockWidget::DockWidgetClosable, enabled);
+}
+
+void MainWindow::toggleConstellationCLClosable(bool enabled) {
+    setDockFeatures(constellationCLDock, QDockWidget::DockWidgetClosable, enabled);
+}
+
+void MainWindow::toggleEyeDiagramClosable(bool enabled) {
+    setDockFeatures(eyeDiagramDock, QDockWidget::DockWidgetClosable, enabled);
 }
 
 // Функция для установки/снятия флагов функций док-виджета
