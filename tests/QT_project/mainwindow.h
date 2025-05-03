@@ -123,6 +123,8 @@ private:
     QChart *constellationChart;  // График созвездия
     QChart *constellationCLChart;  // График созвездия после Costas Loop
     QChart *eyeDiagramChart;
+    QChart *tempChart; // Временнный график для eyeDiagram
+
 
     // Док-виджеты для графиков
     QDockWidget *chartDock;

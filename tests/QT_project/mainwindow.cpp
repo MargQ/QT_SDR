@@ -906,9 +906,7 @@ void MainWindow::updateData(const int16_t* data, size_t size) {
     //     tedIndices.push_back(i + 10 / 2);  // по центру каждого символа
     // }
 
-    
-    // 3. Построение глазковой диаграммы (на сырых данных)
-    // Построение глазковой диаграммы из обработанных данных
+        // Построение глазковой диаграммы из обработанных данных
     updateEyeDiagram(filtered_signal, tedIndices);
 
     // Обновление данных в графиках
@@ -930,78 +928,85 @@ std::vector<std::complex<double>> MainWindow::convertToComplex(const int16_t* da
 }
 
 void MainWindow::updateEyeDiagram(const std::vector<std::complex<double>>& signal, 
-                                const std::vector<int>& tedIndices) {
-    const int samplesPerSymbol = 10;
-    const int windowSize = 2 * samplesPerSymbol;
-    const int halfWindow = windowSize / 2;
+    const std::vector<int>& tedIndices) {
+const int samplesPerSymbol = 10;
+const int windowSize = 2 * samplesPerSymbol;
+const int halfWindow = windowSize / 2;
 
-    // Проверка входных данных
-    if (signal.empty() || tedIndices.empty()) {
-        qWarning() << "Empty input data!";
-        return;
-    }
+if (signal.empty() || tedIndices.empty()) {
+qWarning() << "Empty input data!";
+return;
+}
 
-    // Автоматическое масштабирование
-    double maxAmplitude = 1e-6;
-    for (int idx : tedIndices) {
-        if (idx >= halfWindow && idx + halfWindow < static_cast<int>(signal.size())) {
-            for (int j = -halfWindow; j < halfWindow; ++j) {
-                maxAmplitude = std::max(maxAmplitude, std::abs(signal[idx+j].real()));
-            }
-        }
-    }
-    const double scale = (maxAmplitude > 0) ? 0.8/maxAmplitude : 1.0;
+// Получаем текущий чарт (не создаем новый)
+QChart* chart = eyeDiagramView->chart();
+if (!chart) {
+chart = new QChart();
+eyeDiagramView->setChart(chart);
+}
 
-    // Временный чарт
-    QChart *tempChart = new QChart();
-    tempChart->setMargins(QMargins(0, 0, 0, 0));
-    tempChart->legend()->hide();  // Явно скрываем легенду
+// Сохраняем текущую тему
+QChart::ChartTheme currentTheme = chart->theme();
 
-    // Создаем оси
-    QValueAxis *axisX = new QValueAxis();
-    QValueAxis *axisY = new QValueAxis();
-    tempChart->addAxis(axisX, Qt::AlignBottom);
-    tempChart->addAxis(axisY, Qt::AlignLeft);
+// Очищаем только содержимое
+chart->removeAllSeries();
+for (auto axis : chart->axes()) {
+chart->removeAxis(axis);
+delete axis;
+}
 
-    // Ограничение количества отображаемых фрагментов диаграммы
-    const int maxTraces = qMin(50, static_cast<int>(tedIndices.size()));
+// Настройки чарта
+chart->setMargins(QMargins(0, 0, 0, 0));
+chart->legend()->hide();
 
-    for (int i = 0; i < maxTraces; ++i) {
-        int centerIdx = tedIndices[i];
-        // если выборка не в центре символа, то она пропускается
-        if (centerIdx < halfWindow || centerIdx + halfWindow >= static_cast<int>(signal.size())) 
-            continue;
+// Масштабирование (как в оригинале)
+double maxAmplitude = 1e-6;
+for (int idx : tedIndices) {
+if (idx >= halfWindow && idx + halfWindow < static_cast<int>(signal.size())) {
+for (int j = -halfWindow; j < halfWindow; ++j) {
+maxAmplitude = std::max(maxAmplitude, std::abs(signal[idx+j].real()));
+}
+}
+}
+const double scale = (maxAmplitude > 0) ? 0.8/maxAmplitude : 1.0;
 
-        QLineSeries *trace = new QSplineSeries();
-        //trace->setPen(QPen(Qt::blue, 1, Qt::SolidLine));
+// Создаем новые оси
+QValueAxis *axisX = new QValueAxis();
+QValueAxis *axisY = new QValueAxis();
+chart->addAxis(axisX, Qt::AlignBottom);
+chart->addAxis(axisY, Qt::AlignLeft);
 
-        for (int j = -halfWindow; j < halfWindow; ++j) {
-            int idx = centerIdx + j;
-            double time = static_cast<double>(j) / samplesPerSymbol;
-            double value = signal[idx].real() * scale;
-            trace->append(time, value);
-        }
+// Добавляем данные (как в оригинале)
+const int maxTraces = qMin(50, static_cast<int>(tedIndices.size()));
+for (int i = 0; i < maxTraces; ++i) {
+int centerIdx = tedIndices[i];
+if (centerIdx < halfWindow || centerIdx + halfWindow >= static_cast<int>(signal.size())) 
+continue;
 
-        tempChart->addSeries(trace);
-        trace->attachAxis(axisX);
-        trace->attachAxis(axisY);
-    }
+QLineSeries *trace = new QSplineSeries();
+for (int j = -halfWindow; j < halfWindow; ++j) {
+int idx = centerIdx + j;
+double time = static_cast<double>(j) / samplesPerSymbol;
+double value = signal[idx].real() * scale;
+trace->append(time, value);
+}
 
-    // Настройка графика для диаграммы созвездия после Costas Loop(CL)
-    tempChart->setTitle("Глазковая диаграмма");
-    // Настройка осей
-    axisX->setRange(-1, 1);
-    axisX->setTitleText("Символы");
-    axisY->setRange(-1, 1);
-    axisY->setTitleText("Амплитуда (I)");
+chart->addSeries(trace);
+trace->attachAxis(axisX);
+trace->attachAxis(axisY);
+}
 
-    eyeDiagramView->setRenderHint(QPainter::Antialiasing);
-    // Заменяем старый чарт новым
-    QChart *oldChart = eyeDiagramView->chart();
-    eyeDiagramView->setChart(tempChart);
-    if (oldChart) {
-        delete oldChart;
-    }
+// Восстанавливаем тему
+chart->setTheme(currentTheme);
+
+// Настройка осей и заголовка
+axisX->setRange(-1, 1);
+axisX->setTitleText("Символы");
+axisY->setRange(-1, 1);
+axisY->setTitleText("Амплитуда (I)");
+chart->setTitle("Глазковая диаграмма");
+
+eyeDiagramView->setRenderHint(QPainter::Antialiasing);
 }
 
 
@@ -1082,6 +1087,8 @@ void MainWindow::applyTheme(const QString &theme) {
         chart->setTheme(QChart::ChartThemeLight);
         spectrumChart->setTheme(QChart::ChartThemeLight);
         constellationChart->setTheme(QChart::ChartThemeLight);
+        constellationCLChart->setTheme(QChart::ChartThemeLight);
+        eyeDiagramView->chart()->setTheme(QChart::ChartThemeLight);        // tempChart->setTheme(QChart::ChartThemeLight);
     } else if (theme == "Dark") {
         qApp->setStyleSheet(
             "QWidget { background-color: #2E3440; color: #ECEFF4; }"
@@ -1098,6 +1105,8 @@ void MainWindow::applyTheme(const QString &theme) {
         chart->setTheme(QChart::ChartThemeDark);
         spectrumChart->setTheme(QChart::ChartThemeDark);
         constellationChart->setTheme(QChart::ChartThemeDark);
+        constellationCLChart->setTheme(QChart::ChartThemeDark);
+        eyeDiagramView->chart()->setTheme(QChart::ChartThemeDark);        // tempChart->setTheme(QChart::ChartThemeDark);
     } else if (theme == "Custom") {
         qApp->setStyleSheet(
             "QWidget { background-color: #F0F0F0; color: #000000; }"
@@ -1114,6 +1123,8 @@ void MainWindow::applyTheme(const QString &theme) {
         chart->setTheme(QChart::ChartThemeBlueCerulean);
         spectrumChart->setTheme(QChart::ChartThemeBlueCerulean);
         constellationChart->setTheme(QChart::ChartThemeBlueCerulean);
+        constellationCLChart->setTheme(QChart::ChartThemeBlueCerulean);
+        eyeDiagramView->chart()->setTheme(QChart::ChartThemeBlueCerulean);        // tempChart->setTheme(QChart::ChartThemeBlueCerulean);
     }
 
     currentTheme = theme;
