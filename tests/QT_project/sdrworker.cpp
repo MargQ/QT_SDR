@@ -1,6 +1,7 @@
 #include <QThread>
 #include <iostream>
 #include "mainwindow.h"
+#include "sdrworker.h"
 
 SdrWorker::SdrWorker(SoapySDRDevice *sdr,
                         size_t *channels, 
@@ -25,8 +26,6 @@ SdrWorker::SdrWorker(SoapySDRDevice *sdr,
     rx_mtu = SoapySDRDevice_getStreamMTU(sdr, rxStream);
     tx_mtu = SoapySDRDevice_getStreamMTU(sdr, txStream);
     
-    iteration_count = 6;
-
     // Буфер для приема
     buffer.resize(2 * rx_mtu);
     // Буфер для передачи
@@ -40,7 +39,7 @@ SdrWorker::SdrWorker(SoapySDRDevice *sdr,
     generateTxData();
 
     connect(&timer, &QTimer::timeout, this, &SdrWorker::process);
-    timer.start(30);  // Интервал
+    timer.start(20);  // Интервал
 }
 
 SdrWorker::~SdrWorker() { // Деструктор
@@ -75,11 +74,19 @@ QAM_Mod qamModulator(4);  // Для QPSK=4, для 16-QAM =16
 std::vector<int> message = {0,1,1,0,1,0,0,0,0,1,1,0,0,1,0,1,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,0,1,1,1,1,0,1,1,1,0,0,1,0,0,1,1,0,1,1,0,0,0,1,1,0,0,1,0,0,
                             0,1,1,0,1,0,0,0,0,1,1,0,0,1,0,1,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,0,1,1,1,1,0,1,1,1,0,0,1,0,0,1,1,0,1,1,0,0,0,1,1,0,0,1,0,0};
 
+// Генерация SRRC фильтра
+std::vector<double> filter_srrc = GenerateSRRC(syms, beta, P);
 // Импульсная характеристика формирующего фильтра из единииц (10)
-std::vector<int> formingFilter = {1,1,1,1,1,1,1,1,1,1};
+//std::vector<int> formingFilter = {1,1,1,1,1,1,1,1,1,1};
+std::vector<double> formingFilter(10, 1.0);  // Прямоугольный фильтр
+
+
 // Формирование пакета = заголовок (код Баркера) + данные (message)
 std::vector<int> combinedStream;
-combinedStream.insert(combinedStream.end(), barker7.begin(), barker7.end());
+
+// Можно раскомментировать, код Баркера добавится в начало последовательности, 
+//но тогда TED и глазковая диаграмма будут работать некорректно
+//combinedStream.insert(combinedStream.end(), barker7.begin(), barker7.end()); 
 combinedStream.insert(combinedStream.end(), message.begin(), message.end());
 
 // Добавляем padding, если размер combinedStream не кратен symbolBits
@@ -90,24 +97,40 @@ if (combinedStream.size() % symbolBits != 0) {
 }
 
 std::vector<std::complex<float>> qamSymbols = qamModulator.mod(combinedStream);
-tx_data.clear();
-for (const auto& symbol : qamSymbols) {
-    int real_int = static_cast<int>(symbol.real());
-    int imag_int = static_cast<int>(symbol.imag());
-
-    std::vector<int> realVector = {real_int};
-    std::vector<int> imagVector = {imag_int};
-
-    std::vector<int> filteredReal = FormingFilter(realVector, formingFilter);
-    std::vector<int> filteredImag = FormingFilter(imagVector, formingFilter);
-
-    int scaling_factor = pow(2,14);
-    for (size_t i = 0; i < filteredReal.size(); ++i) {
-        int16_t real_scaled = static_cast<int16_t>(filteredReal[i] * scaling_factor);
-        int16_t imag_scaled = static_cast<int16_t>(filteredImag[i] * scaling_factor);
-        tx_data.push_back(std::complex<int16_t>(real_scaled, imag_scaled));
-    }
+// Оверсемплинг (вставка нулей)
+std::vector<std::complex<float>> oversampled = oversample(qamSymbols, 10);
+for (size_t i = 0; i < qamSymbols.size(); ++i) {
+    oversampled[i*P] = qamSymbols[i]; // Символ + P-1 нулей
 }
+std::vector<std::complex<double>> signal(oversampled.begin(), oversampled.end());
+std::vector<std::complex<double>> filtered_signal = ConvolveSame(signal, filter_srrc);
+tx_data.clear();
+int scaling_factor = pow(2, 14);
+
+for (const auto& sample : filtered_signal) {
+    int16_t re = static_cast<int16_t>(sample.real() * scaling_factor);
+    int16_t im = static_cast<int16_t>(sample.imag() * scaling_factor);
+    tx_data.push_back(std::complex<int16_t>(re, im));
+}
+
+// tx_data.clear();
+// for (const auto& symbol : qamSymbols) {
+//     // Создаем комплексные векторы из одного символа
+//     std::vector<std::complex<double>> realVec = {{symbol.real(), 0}};
+//     std::vector<std::complex<double>> imagVec = {{symbol.imag(), 0}};
+
+//     // Применяем full-свёртку
+//     std::vector<std::complex<double>> filteredReal = ConvolveFull(realVec, filter_srrc);
+//     std::vector<std::complex<double>> filteredImag = ConvolveFull(imagVec, filter_srrc);
+
+//     // Масштабирование и сохранение
+//     int scaling_factor = pow(2, 14);
+//     for (size_t i = 0; i < filteredReal.size(); ++i) {
+//         int16_t real_scaled = static_cast<int16_t>(filteredReal[i].real() * scaling_factor);
+//         int16_t imag_scaled = static_cast<int16_t>(filteredImag[i].real() * scaling_factor);
+//         tx_data.push_back(std::complex<int16_t>(real_scaled, imag_scaled));
+//     }
+// }
 
 }
 
@@ -122,11 +145,6 @@ if (!rxStream || !txStream) {
 }
 
 //qDebug() << "Streams are initialized";
-
-// Получение MTU (Maximum Transmission Unit), в нашем случае - размер буферов. 
-// size_t rx_mtu = SoapySDRDevice_getStreamMTU(sdr, rxStream);
-// size_t tx_mtu = SoapySDRDevice_getStreamMTU(sdr, txStream);
-//printf("MTU - TX: %lu, RX: %lu\n", tx_mtu, rx_mtu);
 
 // Текущая позиция в данных для передачи
 // Размер буфера на передачу
@@ -148,10 +166,6 @@ int16_t tx_buff[2 * tx_mtu];
         size_t data_index = (tx_data_pos + i) % tx_data.size();
         tx_buff[2 * i] = tx_data[data_index].real();
         tx_buff[2 * i + 1] = tx_data[data_index].imag();}
-
-// // Активация потоков
-// SoapySDRDevice_activateStream(sdr, rxStream, 0, 0, 0); //start streaming
-// SoapySDRDevice_activateStream(sdr, txStream, 0, 0, 0); //start streaming
 
 // Основной цикл передачи и приема
 //printf("Start test...\n");
@@ -183,8 +197,6 @@ for (size_t buffers_read = 0; buffers_read < 30; /* in loop */)
 
 //long long last_time = 0;
 
-// Количество итераций
-//size_t iteration_count = 6;
 // Начинается работа с получения и отправки сэмплов
 for (size_t buffers_read = 0; buffers_read < iteration_count; buffers_read++)
 {

@@ -20,16 +20,27 @@
 #include <QDockWidget>
 #include <QToolButton>
 #include <QSettings>
+#include <QGroupBox>
+#include <QCheckBox>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QStyle>
+#include <QtCharts/QSplineSeries>
+
 
 #include <iostream>
 #include <cstdint> // Для работы с memcpy
 #include <cstring> // Для работы с memcpy
-#include <fftw3.h> 
+#include <fftw3.h>
+#include <complex>
+
 #include "sdr.h"
 #include "sdrworker.h"
 #include "qam.h"
 #include "oversample.h"
 #include "filter.h"
+#include "synchr.h"
+#include "TED.h" 
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -48,6 +59,8 @@ public slots:
     std::vector<float> fftshift(const std::vector<float>& data);
     void updateSpectrum(const int16_t* data, size_t size);
     void updateData(const int16_t* data, size_t size);
+    void updateEyeDiagram(const std::vector<std::complex<double>>& signal, const std::vector<int>& tedIndices);
+
     void applySdrSettings(SoapySDRDevice* sdr,
                             const std::string& ipAddress,
                             double gainTX,
@@ -84,19 +97,23 @@ public slots:
 
 
 
+
 private:
 
+    CostasLoop m_costasLoop;
     QtCharts::QChartView *chartView; // Объявление chartView
 
     // Буфер для хранения данных перед вычислением спектра
     std::vector<std::complex<float>> buff;
+    std::vector<std::complex<double>> convertToComplex(const int16_t* data, size_t size);
+
     // Параметры SDR
     double sampleRate_tx = 1e6;
     double sampleRate_rx = 1e6;
     double frequency_tx = 800e6;
     double frequency_rx = 800e6;
-    double txGain = -50.0;
-    double rxGain = 10.0;
+    double txGain = -60.0;
+    double rxGain = 5.0;
     double bandwidth_tx = 20e6;
     double bandwidth_rx = 20e6;
     QValueAxis *axisX_spectrum;
@@ -104,11 +121,15 @@ private:
     QChart *chart;
     QChart *spectrumChart;       // График спектра
     QChart *constellationChart;  // График созвездия
+    QChart *constellationCLChart;  // График созвездия после Costas Loop
+    QChart *eyeDiagramChart;
 
     // Док-виджеты для графиков
     QDockWidget *chartDock;
     QDockWidget *spectrumDock;
     QDockWidget *constellationDock;
+    QDockWidget *constellationCLDock;
+    QDockWidget *eyeDiagramDock;
 
     // Переменные для хранения текущей темы
     QString currentTheme;
@@ -120,7 +141,11 @@ private:
     QLineSeries *realSeries;
     QLineSeries *imagSeries;
     QLineSeries *spectrumSeries;
+    QLineSeries *eyeDiagramSeries;
     QScatterSeries *constellationSeries; // Объявление серии для созвездия
+    QScatterSeries *constellationCLSeries; // Объявление серии для созвездия
+
+    QChartView *eyeDiagramView;
 
     // Действия для управления графиками
     QAction *SpectrumMovableAction;

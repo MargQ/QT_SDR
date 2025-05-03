@@ -1,4 +1,0 @@
-/home/ub/Desktop/QT_SDR/tests/QT_project/build/CMakeFiles/qt.dir
-/home/ub/Desktop/QT_SDR/tests/QT_project/build/CMakeFiles/edit_cache.dir
-/home/ub/Desktop/QT_SDR/tests/QT_project/build/CMakeFiles/rebuild_cache.dir
-/home/ub/Desktop/QT_SDR/tests/QT_project/build/CMakeFiles/qt_autogen.dir

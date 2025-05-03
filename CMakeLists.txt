@@ -31,6 +31,8 @@ set(SOURCE_FILES
     ${DIR}/qam.cpp
     ${DIR}/oversample.cpp
     ${DIR}/filter.cpp
+    ${DIR}/synchr.cpp
+    ${DIR}/TED.cpp
 )
 
 set(HEADER_FILES
@@ -41,6 +43,8 @@ set(HEADER_FILES
     ${DIR}/oversample.h
     ${DIR}/filter.h
     ${DIR}/fft.hpp
+    ${DIR}/synchr.h
+    ${DIR}/TED.h
 )
 
 # Путь до необходимых библиотек

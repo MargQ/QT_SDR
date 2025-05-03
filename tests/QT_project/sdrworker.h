@@ -31,13 +31,14 @@ signals:
 
 private:
     SoapySDRDevice *sdr = nullptr;
+    int samplesPerSymbol = 10;
     std::vector<size_t> channelList; // Список каналов
     // Данные для передачи
     std::vector<std::complex<int16_t>> tx_data;
     std::vector<int16_t> tx_buff;  // Буфер для передачи данных
     size_t tx_data_pos = 0;  // Текущая позиция в tx_data
     size_t tx_buffer_size = 0;  // Размер буфера передачи
-    size_t iteration_count = 0;
+    size_t iteration_count = 5;
     int flags;        // flags set by receive operation
     long long timeNs;
 
