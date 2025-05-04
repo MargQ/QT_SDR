@@ -1,6 +1,5 @@
 #include "qam.h"
 
-
 using namespace std;
 
 QAM_Mod::QAM_Mod(int M) : M(M) 
@@ -28,7 +27,7 @@ std::vector<std::complex<float>> QAM_Mod::mod(const std::vector<int>& bits)
     }
 }
 
-    int symbolBits = std::log2(M); // количество битов для одного QAM символа
+    int symbolBits = std::log2(M); // Количество битов для одного QAM символа
 
     // Проверяем, что bits.size() кратно symbolBits
     if (bits.size() % symbolBits != 0) {

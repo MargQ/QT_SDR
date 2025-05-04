@@ -14,7 +14,7 @@ public:
     std::vector<std::complex<float>> mod(const std::vector<int>& bits);
 
 private:
-    int M;  // мощность модуляции (QAM16: M=16)
+    int M;  // Мощность модуляции (QAM16: M=16)
     std::vector<std::complex<float>> QAMSymbols;
 
     // Функция для отображения индекса на QAM символ

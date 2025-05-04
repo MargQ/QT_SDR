@@ -1,4 +1,5 @@
 #include <QApplication>
+#include "sdrworker.h"
 #include "mainwindow.h"
 #include <QMetaType>
 #include <QStyleFactory>
@@ -18,7 +19,18 @@ int main(int argc, char *argv[]) {
     // Устанавливаем стиль Fusion
     app.setStyle(QStyleFactory::create("Imagine"));
 
-    MainWindow mainWindow;
+    MainWindow mainWindow(
+        sampleRate_tx,
+        sampleRate_rx,
+        frequency_tx,
+        frequency_rx,
+        txGain,
+        rxGain,
+        bandwidth_tx,
+        bandwidth_rx,
+        rxStream,
+        txStream);
+    
     mainWindow.show();
     return app.exec();
 }

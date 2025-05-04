@@ -17,14 +17,16 @@ std::vector<int> TED(const std::vector<std::complex<double>>& data) {
     double p2 = 0.0;
     int n = 0;
 
-    std::vector<int> mass_cool_inex; // Изменяем тип на int
-    std::vector<int> mass_id; // Изменяем тип на int
+    // Изменение типа на int
+    std::vector<int> mass_cool_inex;
+    std::vector<int> mass_id; 
 
     for (size_t ns = 0; ns < data.size() - (2 * nsp); ns += nsp) {
         // Расчет ошибки
         double real = (data[ns + nsp].real() - data[ns].real()) * data[ns + (nsp / 2)].real();
         double imag = (data[ns + nsp].imag() - data[ns].imag()) * data[ns + (nsp / 2)].imag();
-        err[ns / nsp] = (real + imag) / 2; // Среднее значение
+        // Вычисление среднего значения
+        err[ns / nsp] = (real + imag) / 2;
 
         double error = err[ns / nsp];
         p1 = error * K1;
@@ -38,11 +40,11 @@ std::vector<int> TED(const std::vector<std::complex<double>>& data) {
         }
 
         n = std::clamp(static_cast<int>(round(p2 * Nsps)), -Nsps, Nsps);
-
-        int n1 = static_cast<int>(n + ns + nsp); // Приведение к int
+        // Приведение к int
+        int n1 = static_cast<int>(n + ns + nsp);
         
-        mass_cool_inex.push_back(n1); // Добавляем целое число
-        mass_id.push_back(n); // Добавляем целое число
+        mass_cool_inex.push_back(n1);
+        mass_id.push_back(n);
     }
 
     return mass_cool_inex; // Возвращаем массив индексов типа int

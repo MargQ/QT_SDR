@@ -3,12 +3,87 @@
 #include "mainwindow.h"
 #include "sdrworker.h"
 
-SdrWorker::SdrWorker(SoapySDRDevice *sdr,
-                        size_t *channels, 
-                        size_t channel_count,
-                        QObject* parent)
-    : QObject(parent), sdr(sdr), channelList(channels, channels + channel_count)
+double sampleRate_tx = 1e6;
+double sampleRate_rx = 1e6;
+double frequency_tx = 800e6;
+double frequency_rx = 800e6;
+double txGain = -60.0;
+double rxGain = 5.0;
+double bandwidth_tx = 20e6;
+double bandwidth_rx = 20e6;
+size_t rx_mtu = 0;
+size_t tx_mtu = 0;
+
+
+SoapySDRStream *rxStream = nullptr;
+SoapySDRStream *txStream = nullptr;
+SoapySDRDevice *sdr;
+
+size_t channels[1] = {0};
+size_t channel_count = sizeof(channels) / sizeof(channels[0]);
+
+
+SdrWorker::SdrWorker(QObject* parent)
+    : QObject(parent)
       {
+
+        // Инициализация SDR
+    SoapySDRKwargs args = {};
+    SoapySDRKwargs_set(&args, "driver", "plutosdr");
+    if (1) {
+        SoapySDRKwargs_set(&args, "uri", "usb:");
+    } else {
+        SoapySDRKwargs_set(&args, "uri", "ip:192.168.2.1");
+    }
+
+    SoapySDRKwargs_set(&args, "direct", "1");
+    SoapySDRKwargs_set(&args, "timestamp_every", "1024");
+    SoapySDRKwargs_set(&args, "loopback", "0");
+
+    sdr = SoapySDRDevice_make(&args);
+    SoapySDRKwargs_clear(&args);
+
+    if (sdr == NULL)
+    {
+        printf("SoapySDRDevice_make fail: %s\n", SoapySDRDevice_lastError());
+        exit(1);
+    }
+
+    if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_RX, 0, sampleRate_rx) != 0)
+    {
+        printf("setSampleRate rx fail: %s\n", SoapySDRDevice_lastError());
+    }
+    if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_RX, 0, frequency_rx, NULL) != 0)
+    {
+        printf("setFrequency rx fail: %s\n", SoapySDRDevice_lastError());
+    }
+    if (SoapySDRDevice_setBandwidth(sdr, SOAPY_SDR_RX, 0, bandwidth_rx) != 0) {
+        qCritical() << "Ошибка установки полосы пропускания TX:" << SoapySDRDevice_lastError();
+        return;
+    }
+    if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_TX, 0, sampleRate_tx) != 0)
+    {
+        printf("setSampleRate tx fail: %s\n", SoapySDRDevice_lastError());
+    }
+    if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_TX, 0, frequency_tx, NULL) != 0)
+    {
+        printf("setFrequency tx fail: %s\n", SoapySDRDevice_lastError());
+    }
+
+    if (SoapySDRDevice_setBandwidth(sdr, SOAPY_SDR_TX, 0, bandwidth_tx) != 0) {
+        qCritical() << "Ошибка установки полосы пропускания TX:" << SoapySDRDevice_lastError();
+        return;
+    }
+
+    // Настройка каналов и стримов
+
+    if(SoapySDRDevice_setGain(sdr, SOAPY_SDR_RX, channels[0], rxGain) !=0 ){
+        printf("setGain rx fail: %s\n", SoapySDRDevice_lastError());
+    }
+    if(SoapySDRDevice_setGain(sdr, SOAPY_SDR_TX, channels[0], txGain) !=0 ){
+        printf("setGain tx fail: %s\n", SoapySDRDevice_lastError());
+    }
+    
 
     // Инициализация потоков
     rxStream = SoapySDRDevice_setupStream(sdr, SOAPY_SDR_RX, SOAPY_SDR_CS16, channelList.data(), channelList.size(), NULL);

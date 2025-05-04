@@ -4,7 +4,7 @@ void CostasLoop::process(const int16_t* data, size_t size) {
     m_output.resize(size/2);
     
     for (size_t i = 0; i < size/2; ++i) {
-        // Получаем комплексный отсчет
+        // Получение комплексного отсчета
         std::complex<double> sample(
             data[2*i] / 2048.0,
             data[2*i + 1] / 2048.0

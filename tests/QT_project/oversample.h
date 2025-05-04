@@ -4,7 +4,6 @@
 #include <vector>
 #include <complex>
 
-
 // Функция для оверсэмплинга массива
 std::vector<std::complex<float>> oversample(const std::vector<std::complex<float>>& data, int count);
 

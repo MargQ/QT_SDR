@@ -9,67 +9,27 @@
 #include <QToolButton>  // Для QToolButton
 
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart()), realSeries(new QLineSeries()), imagSeries(new QLineSeries()), spectrumSeries(new QLineSeries()), constellationSeries(new QScatterSeries()) {
+MainWindow::MainWindow( 
+                        double sampleRate_tx,
+                        double sampleRate_rx,
+                        double frequency_tx,
+                        double frequency_rx,
+                        double txGain,
+                        double rxGain,
+                        double bandwidth_tx,
+                        double bandwidth_rx,
+                        SoapySDRStream *rxStream,
+                        SoapySDRStream *txStream,
+                        QWidget *parent) : 
+                        QMainWindow(parent), chart(new QChart()),
+                        realSeries(new QLineSeries()), 
+                        imagSeries(new QLineSeries()), 
+                        spectrumSeries(new QLineSeries()), 
+                        constellationSeries(new QScatterSeries()),
+                        channelList(channels, channels + channel_count)
+                         
+{
 
-// Инициализация SDR
-    SoapySDRKwargs args = {};
-    SoapySDRKwargs_set(&args, "driver", "plutosdr");
-    if (1) {
-        SoapySDRKwargs_set(&args, "uri", "usb:");
-    } else {
-        SoapySDRKwargs_set(&args, "uri", "ip:192.168.2.1");
-    }
-
-    SoapySDRKwargs_set(&args, "direct", "1");
-    SoapySDRKwargs_set(&args, "timestamp_every", "1024");
-    SoapySDRKwargs_set(&args, "loopback", "0");
-
-    SoapySDRDevice *sdr = SoapySDRDevice_make(&args);
-    SoapySDRKwargs_clear(&args);
-
-    if (sdr == NULL)
-    {
-        printf("SoapySDRDevice_make fail: %s\n", SoapySDRDevice_lastError());
-        exit(1);
-    }
-
-    if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_RX, 0, sampleRate_rx) != 0)
-    {
-        printf("setSampleRate rx fail: %s\n", SoapySDRDevice_lastError());
-    }
-    if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_RX, 0, frequency_rx, NULL) != 0)
-    {
-        printf("setFrequency rx fail: %s\n", SoapySDRDevice_lastError());
-    }
-    if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_TX, 0, sampleRate_tx) != 0)
-    {
-        printf("setSampleRate tx fail: %s\n", SoapySDRDevice_lastError());
-    }
-    if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_TX, 0, frequency_tx, NULL) != 0)
-    {
-        printf("setFrequency tx fail: %s\n", SoapySDRDevice_lastError());
-    }
-    if (SoapySDRDevice_setBandwidth(sdr, SOAPY_SDR_TX, 0, bandwidth_rx) != 0) {
-        qCritical() << "Ошибка установки полосы пропускания TX:" << SoapySDRDevice_lastError();
-        return;
-    }
-
-    if (SoapySDRDevice_setBandwidth(sdr, SOAPY_SDR_TX, 0, bandwidth_tx) != 0) {
-        qCritical() << "Ошибка установки полосы пропускания TX:" << SoapySDRDevice_lastError();
-        return;
-    }
-
-    // Настройка каналов и стримов
-    size_t channels[] = {0}; // {0} or {0, 1} 
-    size_t channel_count = sizeof(channels) / sizeof(channels[0]);
-
-    if(SoapySDRDevice_setGain(sdr, SOAPY_SDR_RX, channels[0], rxGain) !=0 ){
-        printf("setGain rx fail: %s\n", SoapySDRDevice_lastError());
-    }
-    if(SoapySDRDevice_setGain(sdr, SOAPY_SDR_TX, channels[0], txGain) !=0 ){
-        printf("setGain rx fail: %s\n", SoapySDRDevice_lastError());
-    }
-    
 
     // Создание и настройка DockWidget для параметров SDR
     QDockWidget *dockWidget_p = new QDockWidget("Параметры SDR", this);
@@ -163,9 +123,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
                                                         gainRX_Input, 
                                                         frequencyRX_Input, 
                                                         sampleRateRX_Input,
+                                                        bandwidthRX_Input,
                                                         &channels,
                                                         channel_count,
-                                                        bandwidthRX_Input
+                                                        rxStream,
+                                                        txStream
                                                         ]() {
         
         QString ipAddress = ipAddressInput->text();
@@ -178,19 +140,28 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), chart(new QChart(
         QString sampRate_rx = sampleRateRX_Input->text();
         QString bandwidth_rx = bandwidthRX_Input->text();
         
-        // // можно добавить логику для использования введенных данных
+        double freq_rx_val = frequency_lo_rx.toDouble();
+        double samp_rate_rx_val = sampRate_rx.toDouble();
         // qDebug() << "Applying settings with IP:" << ipAddress << ", Frequency:" << frequency << ", Sample Rate:" << sampleRate;
         // Применяем настройки SDR
-        applySdrSettings(sdr, ipAddress.toStdString(), gain_tx.toDouble(),
-                        frequency_lo_tx.toDouble(), sampRate_tx.toDouble(),
+        // SoapySDRDevice_deactivateStream(sdr, rxStream, 0, 0);
+        // SoapySDRDevice_deactivateStream(sdr, txStream, 0, 0);
+
+        applySdrSettings(
+                        ipAddress.toStdString(), 
+                        gain_tx.toDouble(),
+                        frequency_lo_tx.toDouble(), 
+                        sampRate_tx.toDouble(),
                         bandwidth_tx.toDouble(),
-                        gain_rx.toDouble(), frequency_lo_rx.toDouble(), sampRate_rx.toDouble(), channels, channel_count,
-                        bandwidth_rx.toDouble()
+                        gain_rx.toDouble(), 
+                        frequency_lo_rx.toDouble(), 
+                        sampRate_rx.toDouble(), 
+                        bandwidth_rx.toDouble(),
+                        rxStream,
+                        txStream
                         );
-
-        // Обновляем диапазон оси X графика спектра
-        this->axisX_spectrum->setRange((frequency_rx - sampleRate_rx/2) / 1e6, (frequency_rx + sampleRate_rx/2) / 1e6);
-
+        // SoapySDRDevice_activateStream(sdr, rxStream, 0, 0, 0);
+        // SoapySDRDevice_activateStream(sdr, txStream, 0, 0, 0);
     });
 // Группа для управления режимами SDR
 QGroupBox *sdrModeGroup = new QGroupBox("Режимы работы SDR", dockWidgetContent);
@@ -220,401 +191,375 @@ sdr2Layout->addWidget(sdr2RxCheck);
 sdr2Layout->addWidget(sdr2TxCheck);
 sdr2Group->setLayout(sdr2Layout);
 
-// Добавляем группы в основной layout
+// Добавление группы в основной layout
 modeLayout->addWidget(sdr1Group);
 modeLayout->addWidget(sdr2Group);
 sdrModeGroup->setLayout(modeLayout);
 
-// Добавляем группу режимов в основной layout формы
+// Добавление группы режимов в основной layout
 formLayout->insertRow(1, sdrModeGroup); // Вставляем после IP-адреса
-///////////////////////////////////////////////////////////////////
-    //setupUI();
-    // Настройка графика
-    realSeries->setName("Реальная часть");
-    imagSeries->setName("Мнимая часть");
-    chart->addSeries(realSeries);
-    chart->addSeries(imagSeries);
-    chart->createDefaultAxes();
-    chart->axisY()->setRange(-250, 250);
-    chart->axisX()->setRange(0, 1024);
-    chart->setTitle("График отсчетов во времени");
-
-    QValueAxis *axisX = new QValueAxis();
-    axisX->setTitleText("Отсчеты");
-    chart->setAxisX(axisX, realSeries);
-    chart->setAxisX(axisX, imagSeries);
-
-    QValueAxis *axisY_time = new QValueAxis();
-    axisY_time->setTitleText("Амплитуда");
-    chart->setAxisY(axisY_time, realSeries);
-    chart->setAxisY(axisY_time, imagSeries);
-
-    QChartView *chartView = new QChartView(chart); //////
-    chartView->setRenderHint(QPainter::Antialiasing, false);
-    chartView->setMinimumSize(500, 400);
-    setCentralWidget(chartView);
-
-    // Настройка графика для спектра
-    spectrumChart = new QChart();
-    spectrumSeries->setName("Спектр");
-    spectrumChart->addSeries(spectrumSeries);
-
-    // Создаем и настраиваем ось X для графика спектра
-    // В конструкторе MainWindow
-    axisX_spectrum = new QValueAxis();
-    axisX_spectrum->setTitleText("Частота (МГц)");
-    axisX_spectrum->setRange((frequency_rx - sampleRate_rx/2) / 1e6, (frequency_rx + sampleRate_rx/2) / 1e6);
-
-    spectrumChart->addAxis(axisX_spectrum, Qt::AlignBottom);
-    spectrumSeries->attachAxis(axisX_spectrum);
-
-    QValueAxis *axisY_spectrum = new QValueAxis();
-    axisY_spectrum->setTitleText("Мощность (дБ)");
-    axisY_spectrum->setRange(-100, 0); // Диапазон мощности в dB
-    spectrumChart->addAxis(axisY_spectrum, Qt::AlignLeft);
-    spectrumSeries->attachAxis(axisY_spectrum);
-
-    spectrumChart->setTitle("График частотной области сигнала");
-
-    QChartView *spectrumView = new QChartView(spectrumChart);
-    spectrumView->setRenderHint(QPainter::Antialiasing, false);
-    spectrumView->setMinimumSize(400, 300);
-
-    QVBoxLayout *layout = new QVBoxLayout;
-    layout->addWidget(chartView);
-    layout->addWidget(spectrumView);
-    QWidget *centralWidget = new QWidget(this);
-    centralWidget->setLayout(layout);
-    setCentralWidget(centralWidget);
-
-
-    // Добавление диаграммы созвездия
-    constellationSeries = new QScatterSeries();
-    constellationSeries->setName("Созвездие");
-    constellationSeries->setMarkerSize(7.0); // Размер точек
-
-    // Настройка графика для диаграммы созвездия
-    constellationChart = new QChart();
-    constellationChart->addSeries(constellationSeries);
-    constellationChart->createDefaultAxes();
-    constellationChart->setTitle("Диаграмма созвездия");
-
-    // Настроим оси X и Y для отображения созвездия
-    QValueAxis *constAxisX = new QValueAxis();
-    constAxisX->setRange(-1, 1); // Диапазон значений по X
-    constAxisX->setTitleText("Синфазная компонента");
-    constellationChart->setAxisX(constAxisX, constellationSeries);
-
-    QValueAxis *constAxisY = new QValueAxis();
-    constAxisY->setRange(-1, 1); // Диапазон значений по Y
-    constAxisY->setTitleText("Квадратурная компонента");
-    constellationChart->setAxisY(constAxisY, constellationSeries);
-
-    // Виджет для отображения диаграммы созвездия
-    QChartView *constellationView = new QChartView(constellationChart);
-    constellationView->setRenderHint(QPainter::Antialiasing, false);
-    constellationView->setMinimumSize(400, 400);
-    constellationView->setFixedSize(400, 400);
-
-    // Добавим виджет созвездия в layout
-    layout->addWidget(constellationView, 0, Qt::AlignLeft);
-
-    //////COSTAS LOOP
-    // Добавление диаграммы созвездия
-    constellationCLSeries = new QScatterSeries();
-    constellationCLSeries->setName("Созвездие после Costas Loop");
-    constellationCLSeries->setMarkerSize(7.0); // Размер точек
-
-    // Настройка графика для диаграммы созвездия после Costas Loop(CL)
-    constellationCLChart = new QChart();
-    constellationCLChart->addSeries(constellationCLSeries);
-    constellationCLChart->createDefaultAxes();
-    constellationCLChart->setTitle("Диаграмма созвездия");
-
-    // Настроим оси X и Y для отображения созвездия
-    QValueAxis *constAxisX_CL = new QValueAxis();
-    constAxisX_CL->setRange(-1, 1); // Диапазон значений по X
-    constAxisX_CL->setTitleText("Синфазная компонента");
-    constellationCLChart->setAxisX(constAxisX_CL, constellationCLSeries);
-
-    QValueAxis *constAxisY_CL = new QValueAxis();
-    constAxisY_CL->setRange(-1, 1); // Диапазон значений по Y
-    constAxisY_CL->setTitleText("Квадратурная компонента");
-    constellationCLChart->setAxisY(constAxisY_CL, constellationCLSeries);
-
-    // Виджет для отображения диаграммы созвездия
-    QChartView *constellationViewCL = new QChartView(constellationCLChart);
-    constellationViewCL->setRenderHint(QPainter::Antialiasing, false);
-    constellationViewCL->setMinimumSize(400, 400);
-    constellationViewCL->setFixedSize(400, 400);
-
-    // Добавим виджет созвездия в layout
-    layout->addWidget(constellationViewCL);
-
-    ////////////////////
-
-    // EYEDIAGRAM///
-    eyeDiagramSeries = new QLineSeries();
-    eyeDiagramSeries->setName("Глазковая диаграмма");
-    //eyeDiagramSeries->setMarkerSize(7.0); // Размер точек
-
-    // Настройка графика для диаграммы созвездия после Costas Loop(CL)
-    eyeDiagramChart = new QChart();
-    eyeDiagramChart->addSeries(eyeDiagramSeries);
-    eyeDiagramChart->createDefaultAxes();
-    eyeDiagramChart->setTitle("Глазковая диаграмма");
-
-    // Настроим оси X и Y для отображения созвездия
-    QValueAxis *AxisX_ED = new QValueAxis();
-    AxisX_ED->setRange(-15, 15); // Диапазон значений по X
-    AxisX_ED->setTitleText("Отсчеты");
-    eyeDiagramChart->setAxisX(AxisX_ED, eyeDiagramSeries);
-
-    QValueAxis *AxisY_ED = new QValueAxis();
-    AxisY_ED->setRange(-300, 300); // Диапазон значений по Y
-    AxisY_ED->setTitleText("Амплитуда");
-    eyeDiagramChart->setAxisY(AxisY_ED, eyeDiagramSeries);
-
-    // Виджет для отображения диаграммы созвездия
-    eyeDiagramView = new QChartView(eyeDiagramChart);
-    eyeDiagramView->setRenderHint(QPainter::Antialiasing, false);
-    eyeDiagramView->setMinimumSize(400, 400);
-    eyeDiagramView->setFixedSize(400, 400);
-    eyeDiagramView->setRenderHint(QPainter::Antialiasing, true);
-    ////////
-
-    //resize(500, 500);
-    // Добавление строки состояния
-    statusBar()->showMessage("Ready");
-
-    //////////////////////////////////////////
-    // QVBoxLayout *l1ayout = new QVBoxLayout;
-    // l1ayout->addWidget(chartView);
-    // QWidget *centralWidgets = new QWidget(this);
-    // centralWidgets->setLayout(l1ayout);
-    // setCentralWidget(centralWidgets);
-//////////////////////////////////////////
-
-    // Создание меню
-    QMenuBar *menuBar = this->menuBar();
-    QMenu *fileMenu = menuBar->addMenu("&Файл");
-    QMenu *viewMenu = menuBar->addMenu("&Вид");
-
-    QAction *exitAction = new QAction("&Выход", this);
-    fileMenu->addAction(exitAction);
-
-    // QAction *toggleDockAction = new QAction("&Toggle Dock", this);
-    // toggleDockAction->setCheckable(true);
-    // toggleDockAction->setChecked(true);
-    // viewMenu->addAction(toggleDockAction);
-
-    // Создание тулбара
-    QToolBar *toolBar = new QToolBar("Main Toolbar", this);
-    toolBar->addAction(exitAction);
-    //toolBar->addAction(toggleDockAction);
-    addToolBar(toolBar);
-
-    // Добавление подменю для управления функциями док-виджетов
-    QMenu *ChartsMenu = menuBar->addMenu("Графики");
-
-    // Добавление действий для управления функциями
-    QMenu *movableMenu = ChartsMenu->addMenu("Movable Feature");
-    QMenu *floatableMenu = ChartsMenu->addMenu("Floatable Feature");
-    QMenu *closableMenu = ChartsMenu->addMenu("Closable Feature");
-
-    SpectrumMovableAction = new QAction("Spectrum Chart", this);
-    TimeMovableAction = new QAction("Time Chart", this);
-    ConstellationMovableAction = new QAction("Constellation Chart", this);
-    ConstellationCLMovableAction = new QAction("Constellation Costas Loop Chart", this);
-    EyeDiagramMovableAction = new QAction("Eye Diagram", this);
-
-    SpectrumFloatableAction = new QAction("Spectrum Chart", this);
-    TimeFloatableAction = new QAction("Time Chart", this);
-    ConstellationFloatableAction = new QAction("Constellation Chart", this);
-    ConstellationCLFloatableAction = new QAction("Constellation Costas Loop Chart", this);
-    EyeDiagramFloatableAction = new QAction("Eye Diagram", this);
-
-    SpectrumClosableAction = new QAction("Spectrum Chart", this);
-    TimeClosableAction = new QAction("Time Chart", this);
-    ConstellationClosableAction = new QAction("Constellation Chart", this);
-    ConstellationCLClosableAction = new QAction("Constellation Costas Loop Chart", this);
-    EyeDiagramClosableAction = new QAction("Eye Diagram", this);
-
-    SpectrumMovableAction->setCheckable(true);
-    SpectrumFloatableAction->setCheckable(true);
-    SpectrumMovableAction->setChecked(true);
-    SpectrumFloatableAction->setChecked(true);
-    SpectrumClosableAction->setCheckable(true);
-    SpectrumClosableAction->setChecked(true);
-
-    TimeMovableAction->setCheckable(true);
-    TimeMovableAction->setChecked(true);
-    TimeFloatableAction->setCheckable(true);
-    TimeFloatableAction->setChecked(true);
-    TimeClosableAction->setCheckable(true);
-    TimeClosableAction->setChecked(true);
-
-    ConstellationMovableAction->setCheckable(true);
-    ConstellationMovableAction->setChecked(true);
-    ConstellationFloatableAction->setCheckable(true);
-    ConstellationFloatableAction->setChecked(true);
-    ConstellationClosableAction->setCheckable(true);
-    ConstellationClosableAction->setChecked(true);
-
-    ConstellationCLMovableAction->setCheckable(true);
-    ConstellationCLMovableAction->setChecked(true);
-    ConstellationCLFloatableAction->setCheckable(true);
-    ConstellationCLFloatableAction->setChecked(true);
-    ConstellationCLClosableAction->setCheckable(true);
-    ConstellationCLClosableAction->setChecked(true);
-
-    EyeDiagramMovableAction->setCheckable(true);
-    EyeDiagramMovableAction->setChecked(true);
-    EyeDiagramFloatableAction->setCheckable(true);
-    EyeDiagramFloatableAction->setChecked(true);
-    EyeDiagramClosableAction->setCheckable(true);
-    EyeDiagramClosableAction->setChecked(true);
-
-
-    movableMenu->addAction(SpectrumMovableAction);
-    movableMenu->addAction(TimeMovableAction);
-    movableMenu->addAction(ConstellationMovableAction);
-    movableMenu->addAction(ConstellationCLMovableAction);
-    movableMenu->addAction(EyeDiagramMovableAction);
-
-    floatableMenu->addAction(SpectrumFloatableAction);
-    floatableMenu->addAction(TimeFloatableAction);
-    floatableMenu->addAction(ConstellationFloatableAction);
-    floatableMenu->addAction(ConstellationCLFloatableAction);
-    floatableMenu->addAction(EyeDiagramFloatableAction);
-
-    closableMenu->addAction(SpectrumClosableAction);
-    closableMenu->addAction(TimeClosableAction);
-    closableMenu->addAction(ConstellationClosableAction);
-    closableMenu->addAction(ConstellationCLClosableAction);
-    closableMenu->addAction(EyeDiagramClosableAction);
-
-    // Подключение действий к слотам
-    connect(SpectrumMovableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumMovable);
-    connect(TimeMovableAction, &QAction::toggled, this, &MainWindow::toggleTimeMovable);
-    connect(ConstellationMovableAction, &QAction::toggled, this, &MainWindow::toggleConstellationMovable);
-    connect(ConstellationCLMovableAction, &QAction::toggled, this, &MainWindow::toggleConstellationCLMovable);
-    connect(EyeDiagramMovableAction, &QAction::toggled, this, &MainWindow::toggleEyeDiagramMovable);
-
-    connect(SpectrumFloatableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumFloatable);
-    connect(TimeFloatableAction, &QAction::toggled, this, &MainWindow::toggleTimeFloatable);
-    connect(ConstellationFloatableAction, &QAction::toggled, this, &MainWindow::toggleConstellationFloatable);
-    connect(ConstellationCLFloatableAction, &QAction::toggled, this, &MainWindow::toggleConstellationCLFloatable);
-    connect(EyeDiagramFloatableAction, &QAction::toggled, this, &MainWindow::toggleEyeDiagramFloatable);
-
-    connect(SpectrumClosableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumClosable);
-    connect(TimeClosableAction, &QAction::toggled, this, &MainWindow::toggleTimeClosable);
-    connect(ConstellationClosableAction, &QAction::toggled, this, &MainWindow::toggleConstellationClosable);
-    connect(ConstellationCLClosableAction, &QAction::toggled, this, &MainWindow::toggleConstellationCLClosable);
-    connect(EyeDiagramClosableAction, &QAction::toggled, this, &MainWindow::toggleEyeDiagramClosable);
-
-
-
-
-    ////ВЗАИМОДЕЙСТВИЕ С ГРАФИКАМИ//////////////
-
-    // Создаем док-виджеты для каждого графика
-    chartDock = new QDockWidget(this);
-    spectrumDock = new QDockWidget(this);
-    constellationDock = new QDockWidget(this);
-    constellationCLDock = new QDockWidget(this);
-    eyeDiagramDock = new QDockWidget(this);
-
-    // Добавляем QChartView в док-виджеты
-    chartDock->setWidget(chartView);
-    spectrumDock->setWidget(spectrumView);
-    constellationDock->setWidget(constellationView);
-    constellationCLDock->setWidget(constellationViewCL);
-    eyeDiagramDock->setWidget(eyeDiagramView);
-    eyeDiagramView->setRenderHint(QPainter::Antialiasing);
-
-
-    // Задаем начальное расположение графиков
-    addDockWidget(Qt::RightDockWidgetArea, spectrumDock);          // Временной график сверху
-    splitDockWidget(spectrumDock, chartDock, Qt::Vertical);   // Спектр под временным графиком
-    splitDockWidget(chartDock, constellationDock, Qt::Horizontal);  // Созвездие справа от спектра
-    splitDockWidget(constellationDock, constellationCLDock, Qt::Horizontal);
-    splitDockWidget(constellationCLDock, eyeDiagramDock, Qt::Horizontal);
-
-    // Разрешаем открепление, перемещение и сворачивание
-    chartDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    spectrumDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    constellationDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    constellationCLDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    eyeDiagramDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-
-
-
-    // Настройка пропорций
-    QList<QDockWidget*> leftDocks;
-    leftDocks << dockWidget_p;
-    resizeDocks(leftDocks, {300}, Qt::Horizontal);  // Ширина левой области
-
-    QList<QDockWidget*> rightDocks;
-    rightDocks << chartDock << spectrumDock << constellationDock << constellationCLDock << eyeDiagramDock;
-    resizeDocks(rightDocks, {600, 300, 200, 200, 200}, Qt::Vertical);  // Настройка пропорции графиков
-    // Настройка главного окна
-    setWindowTitle("Анализатор спектра");
-    /////////////////////////////////////////
-
-    ///////////////////////ТЕМА//////////////
-    QMenu *themeMenu = menuBar->addMenu("&Тема");
-
-    lightThemeAction = new QAction("Light", this);
-    darkThemeAction = new QAction("Dark", this);
-    customThemeAction = new QAction("Custom", this);
-
-    lightThemeAction->setCheckable(true);
-    darkThemeAction->setCheckable(true);
-    customThemeAction->setCheckable(true);
-
-    themeMenu->addAction(lightThemeAction);
-    themeMenu->addAction(darkThemeAction);
-    themeMenu->addAction(customThemeAction);
-
-    QActionGroup *themeGroup = new QActionGroup(this);
-    themeGroup->addAction(lightThemeAction);
-    themeGroup->addAction(darkThemeAction);
-    themeGroup->addAction(customThemeAction);
-    themeGroup->setExclusive(true);
-
-    darkThemeAction->setChecked(true);
-    currentTheme = "Dark"; // Сохраняем выбранную тему
-    applyTheme(currentTheme);
-    ///////////////////////////////
-    loadSettings();
-
-    // Создание кнопки Save Settings
-    QPushButton *saveSettingsButton = new QPushButton("Сохранить настройки", this);
-    formLayout->addRow(saveSettingsButton);
-
-    connect(saveSettingsButton, &QPushButton::clicked, this, &MainWindow::saveSettings);
-
-    connect(lightThemeAction, &QAction::triggered, this, [this]() { applyTheme("Light"); });
-    connect(darkThemeAction, &QAction::triggered, this, [this]() { applyTheme("Dark"); });
-    connect(customThemeAction, &QAction::triggered, this, [this]() { applyTheme("Custom"); });
-
-    ///////////////////
-
-    // Подключение действий
-    connect(exitAction, &QAction::triggered, this, &QMainWindow::close);
-
-    // Создание и запуск sdr worker
-    SdrWorker *worker = new SdrWorker(sdr, channels, channel_count);
-
- 
-    worker->moveToThread(&workerThread);
-
-    connect(&workerThread, &QThread::finished, worker, &QObject::deleteLater);
-    connect(this, &MainWindow::destroyed, &workerThread, &QThread::quit);
-    connect(worker, &SdrWorker::dataReady, this, &MainWindow::updateData);
-
-    workerThread.start();
+
+// Настройка графика
+realSeries->setName("Реальная часть");
+imagSeries->setName("Мнимая часть");
+chart->addSeries(realSeries);
+chart->addSeries(imagSeries);
+chart->createDefaultAxes();
+chart->axisY()->setRange(-250, 250);
+chart->axisX()->setRange(0, 1024);
+chart->setTitle("График отсчетов во времени");
+
+QValueAxis *axisX = new QValueAxis();
+axisX->setTitleText("Отсчеты");
+chart->setAxisX(axisX, realSeries);
+chart->setAxisX(axisX, imagSeries);
+
+QValueAxis *axisY_time = new QValueAxis();
+axisY_time->setTitleText("Амплитуда");
+chart->setAxisY(axisY_time, realSeries);
+chart->setAxisY(axisY_time, imagSeries);
+
+QChartView *chartView = new QChartView(chart); //////
+chartView->setRenderHint(QPainter::Antialiasing, false);
+chartView->setMinimumSize(500, 400);
+setCentralWidget(chartView);
+
+// Настройка графика для спектра
+spectrumChart = new QChart();
+spectrumSeries->setName("Спектр");
+spectrumChart->addSeries(spectrumSeries);
+
+// Создание и настройки оси X для графика спектра
+axisX_spectrum = new QValueAxis();
+axisX_spectrum->setTitleText("Частота (МГц)");
+axisX_spectrum->setRange((frequency_rx - sampleRate_rx/2) / 1e6, (frequency_rx + sampleRate_rx/2) / 1e6);
+
+spectrumChart->addAxis(axisX_spectrum, Qt::AlignBottom);
+spectrumSeries->attachAxis(axisX_spectrum);
+
+QValueAxis *axisY_spectrum = new QValueAxis();
+axisY_spectrum->setTitleText("Мощность (дБ)");
+axisY_spectrum->setRange(-100, 0); // Диапазон мощности в dB
+spectrumChart->addAxis(axisY_spectrum, Qt::AlignLeft);
+spectrumSeries->attachAxis(axisY_spectrum);
+
+spectrumChart->setTitle("График частотной области сигнала");
+
+QChartView *spectrumView = new QChartView(spectrumChart);
+spectrumView->setRenderHint(QPainter::Antialiasing, false);
+spectrumView->setMinimumSize(400, 300);
+
+QVBoxLayout *layout = new QVBoxLayout;
+layout->addWidget(chartView);
+layout->addWidget(spectrumView);
+QWidget *centralWidget = new QWidget(this);
+centralWidget->setLayout(layout);
+setCentralWidget(centralWidget);
+
+
+// Добавление диаграммы созвездия
+constellationSeries = new QScatterSeries();
+constellationSeries->setName("Созвездие");
+constellationSeries->setMarkerSize(7.0); // Размер точек
+
+// Настройка графика для диаграммы созвездия
+constellationChart = new QChart();
+constellationChart->addSeries(constellationSeries);
+constellationChart->createDefaultAxes();
+constellationChart->setTitle("Диаграмма созвездия");
+
+// Настройка оси X и Y для отображения созвездия
+QValueAxis *constAxisX = new QValueAxis();
+constAxisX->setRange(-1, 1); // Диапазон значений по X
+constAxisX->setTitleText("Синфазная компонента");
+constellationChart->setAxisX(constAxisX, constellationSeries);
+
+QValueAxis *constAxisY = new QValueAxis();
+constAxisY->setRange(-1, 1); // Диапазон значений по Y
+constAxisY->setTitleText("Квадратурная компонента");
+constellationChart->setAxisY(constAxisY, constellationSeries);
+
+// Виджет для отображения диаграммы созвездия
+QChartView *constellationView = new QChartView(constellationChart);
+constellationView->setRenderHint(QPainter::Antialiasing, false);
+constellationView->setMinimumSize(400, 400);
+constellationView->setFixedSize(400, 400);
+
+// Добавление виджета созвездия в layout
+layout->addWidget(constellationView, 0, Qt::AlignLeft);
+
+// COSTAS LOOP
+// Добавление диаграммы созвездия
+constellationCLSeries = new QScatterSeries();
+constellationCLSeries->setName("Созвездие после Costas Loop");
+constellationCLSeries->setMarkerSize(7.0); // Размер точек
+
+// Настройка графика для диаграммы созвездия после Costas Loop(CL)
+constellationCLChart = new QChart();
+constellationCLChart->addSeries(constellationCLSeries);
+constellationCLChart->createDefaultAxes();
+constellationCLChart->setTitle("Диаграмма созвездия");
+
+// Настроим оси X и Y для отображения созвездия
+QValueAxis *constAxisX_CL = new QValueAxis();
+constAxisX_CL->setRange(-1, 1); // Диапазон значений по X
+constAxisX_CL->setTitleText("Синфазная компонента");
+constellationCLChart->setAxisX(constAxisX_CL, constellationCLSeries);
+
+QValueAxis *constAxisY_CL = new QValueAxis();
+constAxisY_CL->setRange(-1, 1); // Диапазон значений по Y
+constAxisY_CL->setTitleText("Квадратурная компонента");
+constellationCLChart->setAxisY(constAxisY_CL, constellationCLSeries);
+
+// Виджет для отображения диаграммы созвездия
+QChartView *constellationViewCL = new QChartView(constellationCLChart);
+constellationViewCL->setRenderHint(QPainter::Antialiasing, false);
+constellationViewCL->setMinimumSize(400, 400);
+constellationViewCL->setFixedSize(400, 400);
+
+// Добавим виджет созвездия в layout
+layout->addWidget(constellationViewCL);
+
+// EYEDIAGRAM///
+eyeDiagramSeries = new QLineSeries();
+eyeDiagramSeries->setName("Глазковая диаграмма");
+
+// Настройка графика для диаграммы созвездия после Costas Loop(CL)
+eyeDiagramChart = new QChart();
+eyeDiagramChart->addSeries(eyeDiagramSeries);
+eyeDiagramChart->createDefaultAxes();
+eyeDiagramChart->setTitle("Глазковая диаграмма");
+
+// Настройка оси X и Y для отображения созвездия
+QValueAxis *AxisX_ED = new QValueAxis();
+AxisX_ED->setRange(-15, 15); // Диапазон значений по X
+AxisX_ED->setTitleText("Отсчеты");
+eyeDiagramChart->setAxisX(AxisX_ED, eyeDiagramSeries);
+
+QValueAxis *AxisY_ED = new QValueAxis();
+AxisY_ED->setRange(-300, 300); // Диапазон значений по Y
+AxisY_ED->setTitleText("Амплитуда");
+eyeDiagramChart->setAxisY(AxisY_ED, eyeDiagramSeries);
+
+// Виджет для отображения диаграммы созвездия
+eyeDiagramView = new QChartView(eyeDiagramChart);
+eyeDiagramView->setRenderHint(QPainter::Antialiasing, false);
+eyeDiagramView->setMinimumSize(400, 400);
+eyeDiagramView->setFixedSize(400, 400);
+eyeDiagramView->setRenderHint(QPainter::Antialiasing, true);
+
+// Добавление строки состояния
+statusBar()->showMessage("Ready");
+
+// Создание меню
+QMenuBar *menuBar = this->menuBar();
+QMenu *fileMenu = menuBar->addMenu("&Файл");
+QMenu *viewMenu = menuBar->addMenu("&Вид");
+
+QAction *exitAction = new QAction("&Выход", this);
+fileMenu->addAction(exitAction);
+
+// QAction *toggleDockAction = new QAction("&Toggle Dock", this);
+// toggleDockAction->setCheckable(true);
+// toggleDockAction->setChecked(true);
+// viewMenu->addAction(toggleDockAction);
+
+// Создание тулбара
+QToolBar *toolBar = new QToolBar("Main Toolbar", this);
+toolBar->addAction(exitAction);
+//toolBar->addAction(toggleDockAction);
+addToolBar(toolBar);
+
+// Добавление подменю для управления функциями док-виджетов
+QMenu *ChartsMenu = menuBar->addMenu("Графики");
+
+// Добавление действий для управления функциями
+QMenu *movableMenu = ChartsMenu->addMenu("Movable Feature");
+QMenu *floatableMenu = ChartsMenu->addMenu("Floatable Feature");
+QMenu *closableMenu = ChartsMenu->addMenu("Closable Feature");
+
+SpectrumMovableAction = new QAction("Spectrum Chart", this);
+TimeMovableAction = new QAction("Time Chart", this);
+ConstellationMovableAction = new QAction("Constellation Chart", this);
+ConstellationCLMovableAction = new QAction("Constellation Costas Loop Chart", this);
+EyeDiagramMovableAction = new QAction("Eye Diagram", this);
+
+SpectrumFloatableAction = new QAction("Spectrum Chart", this);
+TimeFloatableAction = new QAction("Time Chart", this);
+ConstellationFloatableAction = new QAction("Constellation Chart", this);
+ConstellationCLFloatableAction = new QAction("Constellation Costas Loop Chart", this);
+EyeDiagramFloatableAction = new QAction("Eye Diagram", this);
+
+SpectrumClosableAction = new QAction("Spectrum Chart", this);
+TimeClosableAction = new QAction("Time Chart", this);
+ConstellationClosableAction = new QAction("Constellation Chart", this);
+ConstellationCLClosableAction = new QAction("Constellation Costas Loop Chart", this);
+EyeDiagramClosableAction = new QAction("Eye Diagram", this);
+
+SpectrumMovableAction->setCheckable(true);
+SpectrumFloatableAction->setCheckable(true);
+SpectrumMovableAction->setChecked(true);
+SpectrumFloatableAction->setChecked(true);
+SpectrumClosableAction->setCheckable(true);
+SpectrumClosableAction->setChecked(true);
+
+TimeMovableAction->setCheckable(true);
+TimeMovableAction->setChecked(true);
+TimeFloatableAction->setCheckable(true);
+TimeFloatableAction->setChecked(true);
+TimeClosableAction->setCheckable(true);
+TimeClosableAction->setChecked(true);
+
+ConstellationMovableAction->setCheckable(true);
+ConstellationMovableAction->setChecked(true);
+ConstellationFloatableAction->setCheckable(true);
+ConstellationFloatableAction->setChecked(true);
+ConstellationClosableAction->setCheckable(true);
+ConstellationClosableAction->setChecked(true);
+
+ConstellationCLMovableAction->setCheckable(true);
+ConstellationCLMovableAction->setChecked(true);
+ConstellationCLFloatableAction->setCheckable(true);
+ConstellationCLFloatableAction->setChecked(true);
+ConstellationCLClosableAction->setCheckable(true);
+ConstellationCLClosableAction->setChecked(true);
+
+EyeDiagramMovableAction->setCheckable(true);
+EyeDiagramMovableAction->setChecked(true);
+EyeDiagramFloatableAction->setCheckable(true);
+EyeDiagramFloatableAction->setChecked(true);
+EyeDiagramClosableAction->setCheckable(true);
+EyeDiagramClosableAction->setChecked(true);
+
+
+movableMenu->addAction(SpectrumMovableAction);
+movableMenu->addAction(TimeMovableAction);
+movableMenu->addAction(ConstellationMovableAction);
+movableMenu->addAction(ConstellationCLMovableAction);
+movableMenu->addAction(EyeDiagramMovableAction);
+
+floatableMenu->addAction(SpectrumFloatableAction);
+floatableMenu->addAction(TimeFloatableAction);
+floatableMenu->addAction(ConstellationFloatableAction);
+floatableMenu->addAction(ConstellationCLFloatableAction);
+floatableMenu->addAction(EyeDiagramFloatableAction);
+
+closableMenu->addAction(SpectrumClosableAction);
+closableMenu->addAction(TimeClosableAction);
+closableMenu->addAction(ConstellationClosableAction);
+closableMenu->addAction(ConstellationCLClosableAction);
+closableMenu->addAction(EyeDiagramClosableAction);
+
+// Подключение действий к слотам
+connect(SpectrumMovableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumMovable);
+connect(TimeMovableAction, &QAction::toggled, this, &MainWindow::toggleTimeMovable);
+connect(ConstellationMovableAction, &QAction::toggled, this, &MainWindow::toggleConstellationMovable);
+connect(ConstellationCLMovableAction, &QAction::toggled, this, &MainWindow::toggleConstellationCLMovable);
+connect(EyeDiagramMovableAction, &QAction::toggled, this, &MainWindow::toggleEyeDiagramMovable);
+
+connect(SpectrumFloatableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumFloatable);
+connect(TimeFloatableAction, &QAction::toggled, this, &MainWindow::toggleTimeFloatable);
+connect(ConstellationFloatableAction, &QAction::toggled, this, &MainWindow::toggleConstellationFloatable);
+connect(ConstellationCLFloatableAction, &QAction::toggled, this, &MainWindow::toggleConstellationCLFloatable);
+connect(EyeDiagramFloatableAction, &QAction::toggled, this, &MainWindow::toggleEyeDiagramFloatable);
+
+connect(SpectrumClosableAction, &QAction::toggled, this, &MainWindow::toggleSpectrumClosable);
+connect(TimeClosableAction, &QAction::toggled, this, &MainWindow::toggleTimeClosable);
+connect(ConstellationClosableAction, &QAction::toggled, this, &MainWindow::toggleConstellationClosable);
+connect(ConstellationCLClosableAction, &QAction::toggled, this, &MainWindow::toggleConstellationCLClosable);
+connect(EyeDiagramClosableAction, &QAction::toggled, this, &MainWindow::toggleEyeDiagramClosable);
+
+// ДОБАВЛЕНИЕ ВЗАИМОДЕЙСТВИЕ С ГРАФИКАМИ
+// Создаем док-виджеты для каждого графика
+chartDock = new QDockWidget(this);
+spectrumDock = new QDockWidget(this);
+constellationDock = new QDockWidget(this);
+constellationCLDock = new QDockWidget(this);
+eyeDiagramDock = new QDockWidget(this);
+
+// Добавляем QChartView в док-виджеты
+chartDock->setWidget(chartView);
+spectrumDock->setWidget(spectrumView);
+constellationDock->setWidget(constellationView);
+constellationCLDock->setWidget(constellationViewCL);
+eyeDiagramDock->setWidget(eyeDiagramView);
+eyeDiagramView->setRenderHint(QPainter::Antialiasing);
+
+
+// Задаем начальное расположение графиков
+addDockWidget(Qt::RightDockWidgetArea, spectrumDock);   // Временной график сверху
+splitDockWidget(spectrumDock, chartDock, Qt::Vertical);   // Спектр под временным графиком
+splitDockWidget(chartDock, constellationDock, Qt::Horizontal);  // Созвездие справа от спектра
+splitDockWidget(constellationDock, constellationCLDock, Qt::Horizontal);
+splitDockWidget(constellationCLDock, eyeDiagramDock, Qt::Horizontal);
+
+// Разрешение на открепление, перемещение и сворачивание графиков
+chartDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+spectrumDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+constellationDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+constellationCLDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+eyeDiagramDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+
+// Настройка пропорций
+QList<QDockWidget*> leftDocks;
+leftDocks << dockWidget_p;
+resizeDocks(leftDocks, {300}, Qt::Horizontal);  // Ширина левой области
+
+QList<QDockWidget*> rightDocks;
+rightDocks << chartDock << spectrumDock << constellationDock << constellationCLDock << eyeDiagramDock;
+resizeDocks(rightDocks, {600, 300, 200, 200, 200}, Qt::Vertical);  // Настройка пропорции графиков
+// Настройка главного окна
+setWindowTitle("Анализатор спектра");
+
+// СОЗДАНИЕ ТЕМЫ
+QMenu *themeMenu = menuBar->addMenu("&Тема");
+
+lightThemeAction = new QAction("Light", this);
+darkThemeAction = new QAction("Dark", this);
+customThemeAction = new QAction("Custom", this);
+
+lightThemeAction->setCheckable(true);
+darkThemeAction->setCheckable(true);
+customThemeAction->setCheckable(true);
+
+themeMenu->addAction(lightThemeAction);
+themeMenu->addAction(darkThemeAction);
+themeMenu->addAction(customThemeAction);
+
+QActionGroup *themeGroup = new QActionGroup(this);
+themeGroup->addAction(lightThemeAction);
+themeGroup->addAction(darkThemeAction);
+themeGroup->addAction(customThemeAction);
+themeGroup->setExclusive(true);
+
+darkThemeAction->setChecked(true);
+currentTheme = "Dark"; // Сохраняем выбранную тему
+applyTheme(currentTheme);
+loadSettings();
+
+// Создание кнопки Save Settings
+QPushButton *saveSettingsButton = new QPushButton("Сохранить настройки", this);
+formLayout->addRow(saveSettingsButton);
+
+connect(saveSettingsButton, &QPushButton::clicked, this, &MainWindow::saveSettings);
+
+connect(lightThemeAction, &QAction::triggered, this, [this]() { applyTheme("Light"); });
+connect(darkThemeAction, &QAction::triggered, this, [this]() { applyTheme("Dark"); });
+connect(customThemeAction, &QAction::triggered, this, [this]() { applyTheme("Custom"); });
+
+// Подключение действий
+connect(exitAction, &QAction::triggered, this, &QMainWindow::close);
+
+// Создание и запуск sdr worker
+SdrWorker *worker = new SdrWorker();
+
+worker->moveToThread(&workerThread);
+
+connect(&workerThread, &QThread::finished, worker, &QObject::deleteLater);
+connect(this, &MainWindow::destroyed, &workerThread, &QThread::quit);
+connect(worker, &SdrWorker::dataReady, this, &MainWindow::updateData);
+
+workerThread.start();
 }
 
 MainWindow::~MainWindow() {
@@ -628,19 +573,89 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     event->accept();
 }
 
-// // Метод создает интерфейс
-// void MainWindow::setupUI() {
-//     QVBoxLayout *layout = new QVBoxLayout;
-//     layout->addWidget(chartView);
-//     QWidget *centralWidget = new QWidget(this);
-//     centralWidget->setLayout(layout);
-//     setCentralWidget(centralWidget);
-// }
+void MainWindow::applySdrSettings(
+    const std::string& ipAddress,
+    double gainTX,
+    double frequencyTX,
+    double sampleRateTX,
+    double bandwidthTX,
+    double gainRX,
+    double frequencyRX,
+    double sampleRateRX,
+    double bandwidthRX,
+    SoapySDRStream *rxStream,
+    SoapySDRStream *txStream
+) {
+            
+    if (!sdr) {
+        qCritical() << "SDR is nullptr!";
+        return;
+    }
+    
+    if (channels == nullptr || channel_count == 0) {
+        qCritical() << "Неверные параметры каналов!";
+        return;
+    }
+
+    // Применение настроек TX
+    if (SoapySDRDevice_setGain(sdr, SOAPY_SDR_TX, channels[0], gainTX) !=0 ){
+    printf("setGain tx fail: %s\n", SoapySDRDevice_lastError());
+    }
+
+    if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_TX, 0, frequencyTX, NULL) != 0) {
+    qCritical() << "Ошибка установки частоты TX:" << SoapySDRDevice_lastError();
+    return;
+    }
+
+    if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_TX, 0, sampleRateTX) != 0) {
+    qCritical() << "Ошибка установки скорости выборки TX:" << SoapySDRDevice_lastError();
+    return;
+    }
+
+    if (SoapySDRDevice_setBandwidth(sdr, SOAPY_SDR_TX, 0, bandwidthTX) != 0) {
+    qCritical() << "Ошибка установки полосы пропускания TX:" << SoapySDRDevice_lastError();
+    return;
+    }
+    // Применение настроек RX
+
+    if (SoapySDRDevice_setGain(sdr, SOAPY_SDR_RX, channels[0], gainRX) !=0 ){
+    printf("setGain rx fail: %s\n", SoapySDRDevice_lastError());
+    }
+
+    if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_RX, 0, frequencyRX, NULL) != 0) {
+    //qCritical() << "Ошибка установки частоты RX:" << SoapySDRDevice_lastError();
+    return;
+    }
+
+    if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_RX, 0, sampleRateRX) != 0) {
+    qCritical() << "Ошибка установки скорости выборки RX:" << SoapySDRDevice_lastError();
+    return;
+    }
+
+    if (SoapySDRDevice_setBandwidth(sdr, SOAPY_SDR_RX, 0, bandwidthRX) != 0) {
+    qCritical() << "Ошибка установки полосы пропускания TX:" << SoapySDRDevice_lastError();
+    return;
+    }
+
+    qDebug() << "Настройки SDR успешно применены.";
+
+    // Обновление параметров SDR в MainWindow
+    sampleRate_tx = sampleRateTX;
+    sampleRate_rx = sampleRateRX;
+    frequency_tx = frequencyTX;
+    frequency_rx = frequencyRX;
+    bandwidth_tx = bandwidthTX;
+    bandwidth_rx = bandwidthRX;
+    txGain = gainTX;
+    rxGain = gainRX;
+
+
+}
 
 void MainWindow::saveSettings() {
     QSettings settings("Me", "SDRApp");
     qDebug() << "Saving settings...";
-    // Сохраняем тему
+    // Сохранение темы
     settings.setValue("Theme", currentTheme);
     qDebug() << "Saved theme:" << currentTheme;
 
@@ -728,19 +743,19 @@ void MainWindow::loadSettings() {
     QDockWidget::DockWidgetFeatures spectrumFeatures = 0;
     if (settings.value("spectrumDock/movable", true).toBool()) {
         spectrumFeatures |= QDockWidget::DockWidgetMovable;
-        SpectrumMovableAction->setChecked(true); // Обновляем состояние действия
+        SpectrumMovableAction->setChecked(true); // Обновление состояние действия
     } else {
         SpectrumMovableAction->setChecked(false);
     }
     if (settings.value("spectrumDock/floatable", true).toBool()) {
         spectrumFeatures |= QDockWidget::DockWidgetFloatable;
-        SpectrumFloatableAction->setChecked(true); // Обновляем состояние действия
+        SpectrumFloatableAction->setChecked(true); // Обновление состояние действия
     } else {
         SpectrumFloatableAction->setChecked(false);
     }
     if (settings.value("spectrumDock/closable", true).toBool()) {
         spectrumFeatures |= QDockWidget::DockWidgetClosable;
-        SpectrumClosableAction->setChecked(true); // Обновляем состояние действия
+        SpectrumClosableAction->setChecked(true); // Обновление состояние действия
     } else {
         SpectrumClosableAction->setChecked(false);
     }
@@ -749,19 +764,19 @@ void MainWindow::loadSettings() {
     QDockWidget::DockWidgetFeatures chartFeatures = 0;
     if (settings.value("chartDock/movable", true).toBool()) {
         chartFeatures |= QDockWidget::DockWidgetMovable;
-        TimeMovableAction->setChecked(true); // Обновляем состояние действия
+        TimeMovableAction->setChecked(true); // Обновление состояние действия
     } else {
         TimeMovableAction->setChecked(false);
     }
     if (settings.value("chartDock/floatable", true).toBool()) {
         chartFeatures |= QDockWidget::DockWidgetFloatable;
-        TimeFloatableAction->setChecked(true); // Обновляем состояние действия
+        TimeFloatableAction->setChecked(true); // Обновление состояние действия
     } else {
         TimeFloatableAction->setChecked(false);
     }
     if (settings.value("chartDock/closable", true).toBool()) {
         chartFeatures |= QDockWidget::DockWidgetClosable;
-        TimeClosableAction->setChecked(true); // Обновляем состояние действия
+        TimeClosableAction->setChecked(true); // Обновление состояние действия
     } else {
         TimeClosableAction->setChecked(false);
     }
@@ -770,19 +785,19 @@ void MainWindow::loadSettings() {
     QDockWidget::DockWidgetFeatures constellationFeatures = 0;
     if (settings.value("constellationDock/movable", true).toBool()) {
         constellationFeatures |= QDockWidget::DockWidgetMovable;
-        ConstellationMovableAction->setChecked(true); // Обновляем состояние действия
+        ConstellationMovableAction->setChecked(true); // Обновление состояние действия
     } else {
         ConstellationMovableAction->setChecked(false);
     }
     if (settings.value("constellationDock/floatable", true).toBool()) {
         constellationFeatures |= QDockWidget::DockWidgetFloatable;
-        ConstellationFloatableAction->setChecked(true); // Обновляем состояние действия
+        ConstellationFloatableAction->setChecked(true); // Обновление состояние действия
     } else {
         ConstellationFloatableAction->setChecked(false);
     }
     if (settings.value("constellationDock/closable", true).toBool()) {
         constellationFeatures |= QDockWidget::DockWidgetClosable;
-        ConstellationClosableAction->setChecked(true); // Обновляем состояние действия
+        ConstellationClosableAction->setChecked(true); // Обновление состояние действия
     } else {
         ConstellationClosableAction->setChecked(false);
     }
@@ -791,19 +806,19 @@ void MainWindow::loadSettings() {
     QDockWidget::DockWidgetFeatures constellationCLFeatures = 0;
     if (settings.value("constellationCLDock/movable", true).toBool()) {
         constellationCLFeatures |= QDockWidget::DockWidgetMovable;
-        ConstellationCLMovableAction->setChecked(true); // Обновляем состояние действия
+        ConstellationCLMovableAction->setChecked(true); // Обновление состояние действия
     } else {
         ConstellationCLMovableAction->setChecked(false);
     }
     if (settings.value("constellationCLDock/floatable", true).toBool()) {
         constellationCLFeatures |= QDockWidget::DockWidgetFloatable;
-        ConstellationCLFloatableAction->setChecked(true); // Обновляем состояние действия
+        ConstellationCLFloatableAction->setChecked(true); // Обновление состояние действия
     } else {
         ConstellationCLFloatableAction->setChecked(false);
     }
     if (settings.value("constellationCLDock/closable", true).toBool()) {
         constellationCLFeatures |= QDockWidget::DockWidgetClosable;
-        ConstellationCLClosableAction->setChecked(true); // Обновляем состояние действия
+        ConstellationCLClosableAction->setChecked(true); // Обновление состояние действия
     } else {
         ConstellationCLClosableAction->setChecked(false);
     }
@@ -812,19 +827,19 @@ void MainWindow::loadSettings() {
     QDockWidget::DockWidgetFeatures eyeDiagramFeatures = 0;
     if (settings.value("eyeDiagramDock/movable", true).toBool()) {
         eyeDiagramFeatures |= QDockWidget::DockWidgetMovable;
-        EyeDiagramMovableAction->setChecked(true); // Обновляем состояние действия
+        EyeDiagramMovableAction->setChecked(true); // Обновление состояние действия
     } else {
         EyeDiagramMovableAction->setChecked(false);
     }
     if (settings.value("eyeDiagramDock/floatable", true).toBool()) {
         eyeDiagramFeatures |= QDockWidget::DockWidgetFloatable;
-        EyeDiagramFloatableAction->setChecked(true); // Обновляем состояние действия
+        EyeDiagramFloatableAction->setChecked(true); // Обновление состояние действия
     } else {
         EyeDiagramFloatableAction->setChecked(false);
     }
     if (settings.value("eyeDiagramDock/closable", true).toBool()) {
         eyeDiagramFeatures |= QDockWidget::DockWidgetClosable;
-        EyeDiagramClosableAction->setChecked(true); // Обновляем состояние действия
+        EyeDiagramClosableAction->setChecked(true); // Обновление состояние действия
     } else {
         EyeDiagramClosableAction->setChecked(false);
     }
@@ -917,7 +932,7 @@ void MainWindow::updateData(const int16_t* data, size_t size) {
     // Заполнение серии новыми точками для диаграммы созвездия
     for (size_t i = 5; i < size; ++i) {
         if (2 * i + 1 >= size * 2) continue; // Защита от выхода за границы
-        // Извлекаем реальную и мнимую части
+        // Извлечение реальной и мнимой части
         int16_t real = data[2 * i];      // Реальная часть
         int16_t imag = data[2 * i + 1];  // Мнимая часть
         // Нормализация значений от -2048 до 2048
@@ -934,10 +949,10 @@ void MainWindow::updateData(const int16_t* data, size_t size) {
     }
     
     std::vector<double> filter(10, 1.0);  // Прямоугольный фильтр
-    std::vector<double> filter_srrc = GenerateSRRC(syms, beta, P);
+    std::vector<double> filter_srrc = GenerateSRRC(syms, beta, P); // SRRC фильтр
 
     // Обработка Costas Loop с отфильтрованными данными
-    m_costasLoop.process(data, size);  // Передаем отфильтрованные данные
+    m_costasLoop.process(data, size);  // Передача отфильтрованных данных
     
     // Обновление графика
     constellationCLSeries->clear();
@@ -984,7 +999,7 @@ void MainWindow::updateData(const int16_t* data, size_t size) {
     //     tedIndices.push_back(i + 10 / 2);  // по центру каждого символа
     // }
 
-        // Построение глазковой диаграммы из обработанных данных
+    // Построение глазковой диаграммы из обработанных данных
     updateEyeDiagram(filtered_signal, tedIndices);
 
     // Обновление данных в графиках
@@ -1086,78 +1101,11 @@ void MainWindow::updateEyeDiagram(const std::vector<std::complex<double>>& signa
     // Сглаживание
     eyeDiagramView->setRenderHint(QPainter::Antialiasing);
 }
-
-
     // Дебаг для проверки состояния буфера
     //qDebug() << "First point real:" << m_realBuffer.first().x() << m_realBuffer.first().y();
     //qDebug() << "First point imag:" << m_imagBuffer.first().x() << m_imagBuffer.first().y();
     //qDebug() << "Last point real:" << m_realBuffer.last().x() << m_realBuffer.last().y();
     //qDebug() << "Last point imag:" << m_imagBuffer.last().x() << m_imagBuffer.last().y();
-
-void MainWindow::applySdrSettings(SoapySDRDevice* sdr,
-                                const std::string& ipAddress,
-                                double gainTX,
-                                double frequencyTX,
-                                double sampleRateTX,
-                                double bandwidthTX,
-                                double gainRX,
-                                double frequencyRX,
-                                double sampleRateRX,
-                                size_t* channels,
-                                size_t channel_count,
-                                double bandwidthRX) {
-    
-    // Применение настроек TX
-    if (SoapySDRDevice_setGain(sdr, SOAPY_SDR_TX, channels[0], gainRX) !=0 ){
-        printf("setGain rx fail: %s\n", SoapySDRDevice_lastError());
-    }
-
-    if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_TX, 0, frequencyTX, NULL) != 0) {
-        qCritical() << "Ошибка установки частоты TX:" << SoapySDRDevice_lastError();
-        return;
-    }
-    
-    if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_TX, 0, sampleRateTX) != 0) {
-        qCritical() << "Ошибка установки скорости выборки TX:" << SoapySDRDevice_lastError();
-        return;
-    }
-    
-    if (SoapySDRDevice_setBandwidth(sdr, SOAPY_SDR_TX, 0, bandwidthTX) != 0) {
-        qCritical() << "Ошибка установки полосы пропускания TX:" << SoapySDRDevice_lastError();
-        return;
-    }
-
-   // Применение настроек RX
-   
-    if (SoapySDRDevice_setGain(sdr, SOAPY_SDR_RX, channels[0], gainRX) !=0 ){
-        printf("setGain rx fail: %s\n", SoapySDRDevice_lastError());
-    }
-
-    if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_RX, 0, frequencyRX, NULL) != 0) {
-        //qCritical() << "Ошибка установки частоты RX:" << SoapySDRDevice_lastError();
-        return;
-    }
-   
-    if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_RX, 0, sampleRateRX) != 0) {
-        qCritical() << "Ошибка установки скорости выборки RX:" << SoapySDRDevice_lastError();
-        return;
-    }
-
-    if (SoapySDRDevice_setBandwidth(sdr, SOAPY_SDR_TX, 0, bandwidthTX) != 0) {
-        qCritical() << "Ошибка установки полосы пропускания TX:" << SoapySDRDevice_lastError();
-        return;
-    }
-   
-    qDebug() << "Настройки SDR успешно применены.";
-
-    // Обновление параметров SDR в MainWindow
-        this->sampleRate_tx = sampleRateTX;
-        this->sampleRate_rx = sampleRateRX;
-        this->frequency_tx = frequencyTX;
-        this->frequency_rx = frequencyRX;
-        this->txGain = gainTX;
-        this->rxGain = gainRX;
-}
 
 void MainWindow::applyTheme(const QString &theme) {
     if (theme == "Light") {
@@ -1166,7 +1114,7 @@ void MainWindow::applyTheme(const QString &theme) {
         spectrumChart->setTheme(QChart::ChartThemeLight);
         constellationChart->setTheme(QChart::ChartThemeLight);
         constellationCLChart->setTheme(QChart::ChartThemeLight);
-        eyeDiagramView->chart()->setTheme(QChart::ChartThemeLight);        // tempChart->setTheme(QChart::ChartThemeLight);
+        eyeDiagramView->chart()->setTheme(QChart::ChartThemeLight);
     } else if (theme == "Dark") {
         qApp->setStyleSheet(
             "QWidget { background-color: #2E3440; color: #ECEFF4; }"
@@ -1184,7 +1132,7 @@ void MainWindow::applyTheme(const QString &theme) {
         spectrumChart->setTheme(QChart::ChartThemeDark);
         constellationChart->setTheme(QChart::ChartThemeDark);
         constellationCLChart->setTheme(QChart::ChartThemeDark);
-        eyeDiagramView->chart()->setTheme(QChart::ChartThemeDark);        // tempChart->setTheme(QChart::ChartThemeDark);
+        eyeDiagramView->chart()->setTheme(QChart::ChartThemeDark);
     } else if (theme == "Custom") {
         qApp->setStyleSheet(
             "QWidget { background-color: #F0F0F0; color: #000000; }"
@@ -1202,7 +1150,7 @@ void MainWindow::applyTheme(const QString &theme) {
         spectrumChart->setTheme(QChart::ChartThemeBlueCerulean);
         constellationChart->setTheme(QChart::ChartThemeBlueCerulean);
         constellationCLChart->setTheme(QChart::ChartThemeBlueCerulean);
-        eyeDiagramView->chart()->setTheme(QChart::ChartThemeBlueCerulean);        // tempChart->setTheme(QChart::ChartThemeBlueCerulean);
+        eyeDiagramView->chart()->setTheme(QChart::ChartThemeBlueCerulean);
     }
 
     currentTheme = theme;

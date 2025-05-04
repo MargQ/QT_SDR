@@ -50,7 +50,18 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+explicit MainWindow( 
+                double sampleRate_tx,
+                double sampleRate_rx,
+                double frequency_tx,
+                double frequency_rx,
+                double txGain,
+                double rxGain,
+                double bandwidth_tx,
+        double bandwidth_rx,
+        SoapySDRStream *rxStream,
+        SoapySDRStream *txStream, 
+        QWidget *parent = nullptr);
     ~MainWindow();
 
 public slots:
@@ -61,7 +72,7 @@ public slots:
     void updateData(const int16_t* data, size_t size);
     void updateEyeDiagram(const std::vector<std::complex<double>>& signal, const std::vector<int>& tedIndices);
 
-    void applySdrSettings(SoapySDRDevice* sdr,
+    void applySdrSettings(
                             const std::string& ipAddress,
                             double gainTX,
                             double frequencyTX,
@@ -70,9 +81,9 @@ public slots:
                             double gainRX,
                             double frequencyRX,
                             double sampleRateRX,
-                            size_t* channels,
-                            size_t channel_count,
-                            double bandwidthRX
+                            double bandwidthRX,
+                            SoapySDRStream *rxStream,
+                            SoapySDRStream *txStream
                             );
     void applyTheme(const QString &theme);
     // Слоты для управления функциями док-виджетов
@@ -106,6 +117,8 @@ public slots:
 
 private:
 
+    std::vector<size_t> channelList;
+
     CostasLoop m_costasLoop;
     QtCharts::QChartView *chartView; // Объявление chartView
 
@@ -113,15 +126,8 @@ private:
     std::vector<std::complex<float>> buff;
     std::vector<std::complex<double>> convertToComplex(const int16_t* data, size_t size);
 
-    // Параметры SDR
-    double sampleRate_tx = 1e6;
-    double sampleRate_rx = 1e6;
-    double frequency_tx = 800e6;
-    double frequency_rx = 800e6;
-    double txGain = -60.0;
-    double rxGain = 5.0;
-    double bandwidth_tx = 20e6;
-    double bandwidth_rx = 20e6;
+
+    
     QValueAxis *axisX_spectrum;
 
     QChart *chart;
@@ -176,14 +182,14 @@ private:
     QAction *EyeDiagramClosableAction;
 
     
-    SoapySDRStream *rxStream;
-    SoapySDRStream *txStream;
+    // SoapySDRStream *rxStream;
+    // SoapySDRStream *txStream;
 
     QVector<QPointF> m_realBuffer;
     QVector<QPointF> m_imagBuffer;
     QVector<QPointF> m_spectrumBuffer;
     QThread workerThread;
-    size_t channels[1] = {0}; // {0} or {0, 1}
+
     QTimer *timer;
 };
 

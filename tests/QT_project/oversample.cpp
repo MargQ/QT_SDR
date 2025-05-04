@@ -1,6 +1,6 @@
 #include "oversample.h"
 
-// Функция оверсемплинга путём повторения каждого значения count раз
+// Функция оверсемплинга, повторяется каждое значения count раз
 std::vector<std::complex<float>> oversample(const std::vector<std::complex<float>>& data, int count) {
     std::vector<std::complex<float>> oversampledData;
     for (const auto& val : data) {
